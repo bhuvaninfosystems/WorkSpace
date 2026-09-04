@@ -1,0 +1,18 @@
+name: Deploy Task Management frontend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy to IIS site folder
+        shell: cmd
+        run: |
+          robocopy "%GITHUB_WORKSPACE%" "C:\Software\Task Server\HTML" /MIR /XD .git .github .vscode /XF PROJECT_ARCHITECTURE.md
+          if %ERRORLEVEL% GEQ 8 (exit /b 1) else (exit /b 0)
