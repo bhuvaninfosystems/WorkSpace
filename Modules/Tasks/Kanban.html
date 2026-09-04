@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Task Kanban Board</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+
+    <link href="../../Config/cdn/select2.min.css" rel="stylesheet" />
+    <script src="../../Config/cdn/select2.full.min.js"></script>
+    <script src="../../Config/cdn/sweetalert2_11.js"></script>
+
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+    <script src="../../UI_Components/modals/components/input-field.js"></script>
+    <script src="../../UI_Components/modals/components/select2-field.js"></script>
+    <script src="../../UI_Components/modals/popup-modal.js"></script>
+    <script src="../../UI_Components/layout/data-grid.js"></script>
+    <script src="../../UI_Components/modals/components/modal-grid.js"></script>
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <div class="h-full w-full flex relative">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- Top Header Navbar -->
+            <div id="top-nav-container"></div>
+
+            <!-- Main Canvas View -->
+            <main id="main-canvas" onclick="window.appNav && window.appNav.closeSubNavOnDesktop()"
+                class="relative flex-1 bg-[#f9fafb] overflow-hidden flex flex-col">
+
+                <!-- KPI Dashboard widgets section -->
+                <premium-kpi-manager id="task-kpis" data-columns="4"></premium-kpi-manager>
+
+                <!-- Control Bar -->
+                <div
+                    class="px-6 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-xl font-bold text-gray-800 tracking-tight">Task Kanban Board</h1>
+                        <span
+                            class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary-50 text-secondary-700"
+                            id="total-badge">0 tasks</span>
+                    </div>
+
+                    <div class="flex items-center gap-3 self-end sm:self-auto">
+                        <!-- Toggle Views -->
+                        <div
+                            class="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-1 py-1">
+                            <button type="button" id="btn-view-board" title="Board View" aria-label="Board View"
+                                class="flex min-w-[1.5rem] h-6 items-center justify-center rounded-md p-1 text-sm font-semibold transition-all duration-200 text-gray-500 hover:text-gray-800">
+                                <i class="bi bi-kanban text-base leading-none"></i>
+                            </button>
+                            <button type="button" id="btn-view-table" title="Table View" aria-label="Table View"
+                                class="flex min-w-[1.5rem] h-6 items-center justify-center rounded-md p-1 text-sm font-semibold transition-all duration-200 bg-white text-secondary-500 shadow-sm border border-gray-100">
+                                <i class="bi bi-table text-base leading-none"></i>
+                            </button>
+                        </div>
+
+                        <!-- Add Record Button -->
+                        <premium-button id="add-task-btn" icon="bi-plus-circle" label="Add Task" variant="solid"
+                            bg-color="bg-white" border-color="border-gray-300" text-color="text-black"></premium-button>
+                    </div>
+                </div>
+
+                <!-- Tabs Row -->
+                <div class="px-6 bg-white border-b border-gray-200">
+                    <div class="flex gap-6 overflow-x-auto no-scrollbar" id="date-tabs" role="tablist">
+                        <button type="button" data-date-tab="all"
+                            class="py-3 text-sm font-semibold border-b-2 border-secondary-500 text-secondary-500 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">All</button>
+                        <button type="button" data-date-tab="today"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Today</button>
+                        <button type="button" data-date-tab="upcoming"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Upcoming</button>
+                        <button type="button" data-date-tab="past"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Past
+                            (Overdue)</button>
+                        <button type="button" data-date-tab="completed"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Completed</button>
+                    </div>
+                </div>
+
+                <!-- Kanban Columns View -->
+                <div id="board-view" class="hidden flex-1 min-h-0 overflow-x-auto p-6">
+                    <div class="flex h-full min-h-[350px] gap-6 select-none">
+
+                        <!-- To Do Column (Open status) -->
+                        <div class="flex-1 min-w-[300px] max-w-[400px] bg-gray-50 rounded-2xl flex flex-col border border-gray-200/60 shadow-sm"
+                            data-status="Open">
+                            <div
+                                class="px-4 py-3 border-b border-gray-200/50 flex items-center justify-between bg-white rounded-t-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                                    <h3 class="text-sm font-bold text-gray-700">To Do</h3>
+                                </div>
+                                <span class="px-2 py-0.5 text-xs font-bold bg-gray-100 text-gray-600 rounded-full"
+                                    id="count-todo">0</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 drop-zone" data-drop-zone="Open">
+                            </div>
+                        </div>
+
+                        <!-- In Progress Column (In Progress status) -->
+                        <div class="flex-1 min-w-[300px] max-w-[400px] bg-blue-50/20 rounded-2xl flex flex-col border border-blue-100 shadow-sm"
+                            data-status="In Progress">
+                            <div
+                                class="px-4 py-3 border-b border-blue-100/50 flex items-center justify-between bg-white rounded-t-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    <h3 class="text-sm font-bold text-blue-700">In Progress</h3>
+                                </div>
+                                <span class="px-2 py-0.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-full"
+                                    id="count-progress">0</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 drop-zone"
+                                data-drop-zone="In Progress"></div>
+                        </div>
+
+                        <!-- Done Column (Complete status) -->
+                        <div class="flex-1 min-w-[300px] max-w-[400px] bg-green-50/10 rounded-2xl flex flex-col border border-green-100 shadow-sm"
+                            data-status="Complete">
+                            <div
+                                class="px-4 py-3 border-b border-green-100/50 flex items-center justify-between bg-white rounded-t-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                    <h3 class="text-sm font-bold text-green-700">Complete</h3>
+                                </div>
+                                <span class="px-2 py-0.5 text-xs font-bold bg-green-50 text-green-600 rounded-full"
+                                    id="count-Complete">0</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 drop-zone"
+                                data-drop-zone="Complete"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Flat Grid Table View -->
+                <div id="table-view" class="flex-1 min-h-0 p-3 flex flex-col">
+                    <premium-modal-grid id="task-grid" class="w-full flex-1 min-h-0" data-show-sino="true"
+                        data-show-actions="false" data-row-id-field="mTransNo" data-pagination="true"
+                        data-pagination-page-size="15" data-pagination-page-size-selector="[5, 10, 15, 20, 50]"
+                        data-floating-filter="false" data-row-height="40" data-auto-fill-height="true"
+                        data-min-height="200" data-suppress-size-to-fit="false" data-action-view="viewRecord"
+                        data-action-edit="editRecord" data-action-delete="deleteRecord"></premium-modal-grid>
+                </div>
+
+                <!-- Task Form Popup Modal -->
+                <premium-popup-modal id="task-modal" data-width="640px" data-max-width="95%" data-height="450px">
+                    <template data-modal-body>
+                        <form id="task-form" class="space-y-4">
+                            <input type="hidden" id="task-id" value="0">
+
+                            <!-- Task Name -->
+                            <div class="space-y-1">
+                                <label data-premium-label>Task Name *</label>
+                                <input type="text" id="task-name" data-premium-input placeholder="Enter task name"
+                                    required>
+                            </div>
+
+                            <!-- Priority, Frequency, Due Date & Due Time Row -->
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                <div class="space-y-1">
+                                    <label data-premium-label>Priority *</label>
+                                    <select id="task-priority" class="w-full" data-premium-input required>
+                                        <option value="High">High</option>
+                                        <option value="Medium" selected>Medium</option>
+                                        <option value="Low">Low</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>Task Assign Type *</label>
+                                    <select id="task-frequency" class="w-full" data-premium-input required>
+                                        <option value="particular" selected>One-time</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="quarterly">Quarterly</option>
+                                        <option value="yearly">Yearly</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>Due Date *</label>
+                                    <input type="date" id="task-due-date" data-premium-input required>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>Due Time *</label>
+                                    <input type="time" id="task-due-time" data-premium-input required>
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="space-y-1">
+                                <label data-premium-label>Task Description *</label>
+                                <textarea id="task-description" data-premium-input rows="4"
+                                    placeholder="Describe the task details..." required></textarea>
+                            </div>
+                        </form>
+                    </template>
+                </premium-popup-modal>
+            </main>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div id="bottom-nav-container"></div>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ Task Kanban Board                                                ║
+        // ║ NewDesign Type-1 module using AccountMaster-style structure.     ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        //
+        //  SECTIONS:  1-CONSTANTS  2-STATE  3-DATA  4-UI HELPERS
+        //             5-FEATURE LOGIC  6-COMPONENTS  7-EVENTS  8-INIT
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 1 — CONSTANTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 2 — STATE
+        // ─────────────────────────────────────────────────────────────────
+        var dragRecordId = null;
+        var selectedDateTab = 'all';
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 3 — DATA
+        // ─────────────────────────────────────────────────────────────────
+
+        // Auth guard
+        if (!JSON.parse(localStorage.getItem('LogUser'))) {
+            window.location.href = '/Index.html';
+        }
+
+        var _session = JSON.parse(localStorage.getItem('LogUser'));
+        var DomainBase = (localStorage.getItem('Domain') || '').trim().replace(/\/+$/, '');
+        var UserNo = Number(_session && _session.mTransNo);
+        var mSubscID = _session && _session.subscID;
+        var mUserType = _session && _session.userType;
+        var Designation = _session && _session.designation;
+        var LinkNo = _session && _session.linkNo;
+        var mBranch = localStorage.getItem('Branch');
+        var assignNameCache = null;
+
+        var mockTaskList = [];
+
+        function padTwo(n) { return (n < 10 ? '0' : '') + n; }
+        function toArray(val) { return Array.isArray(val) ? val : (val ? [val] : []); }
+        function buildFallbackLabel(sess) {
+            if (!sess) return 'Self';
+            return (sess.userName || sess.userId || 'Self');
+        }
+        function buildRowLabel(r) { return r.name || r.Name || r.employeeName || r.EmployeeName || r.userName || r.UserName || 'Unknown'; }
+
+        function resolveAssignName() {
+            var deferred = $.Deferred();
+            if (assignNameCache !== null) { deferred.resolve(assignNameCache); return deferred.promise(); }
+            var fallback = buildFallbackLabel(_session);
+            if (!DomainBase) { assignNameCache = fallback; deferred.resolve(assignNameCache); return deferred.promise(); }
+
+            $.ajax({
+                url: DomainBase + '/api/Task/UserList',
+                method: 'GET',
+                success: function (data) {
+                    var rows = toArray(data);
+                    var label = '';
+                    $.each(rows, function (i, row) {
+                        var m = (row.mTransNo != null) ? row.mTransNo : row.MTransNo;
+                        if (m == null || Number(m) !== Number(UserNo)) return;
+                        label = buildRowLabel(row);
+                        return false;
+                    });
+                    assignNameCache = label || fallback;
+                    deferred.resolve(assignNameCache);
+                },
+                error: function (err) { assignNameCache = fallback; deferred.resolve(assignNameCache); }
+            });
+            return deferred.promise();
+        }
+
+        function extractIdFromResponse(resp) {
+            var contentType = (resp.headers.get('content-type') || '').toLowerCase();
+            if (contentType.indexOf('application/json') !== -1) {
+                return resp.json().then(function (json) { return Number(json.mTransNo || json.MTransNo || json.id || 0) || 0; });
+            }
+            return resp.text().then(function (text) {
+                var match = text.match(/\^(\d+)/);
+                return match ? Number(match[1]) : 0;
+            });
+        }
+
+        function saveNewRecord(formData, existingId) {
+            var deferred = $.Deferred();
+            if (!DomainBase) { deferred.reject(new Error('Domain is not configured.')); return deferred.promise(); }
+
+            resolveAssignName().done(function (assignName) {
+                var taskDateIso = formData.duedate ? new Date(formData.duedate + 'T00:00:00').toISOString() : new Date().toISOString();
+                var headerPayload = JSON.stringify({
+                    id: 0,
+                    mTransNo: existingId || 0,
+                    mCount: 0,
+                    taskName: formData.taskName,
+                    taskDescription: formData.description,
+                    taskDate: taskDateIso,
+                    taskTime: formData.dueTime || '',
+                    duedate: formData.duedate,
+                    dueTime: formData.dueTime || '',
+                    taskPriority: formData.priority,
+                    taskAssignType: formData.taskAssignType || 'particular',
+                    systemIP: '1',
+                    lockStatus: 'Y',
+                    createdBy: UserNo,
+                    createdOn: new Date().toISOString(),
+                    subscID: Number(mSubscID) || 1,
+                    taskStatus: formData.status || 'Todo',
+                    status: existingId ? 'Update' : 'Insert'
+                });
+
+                fetch(DomainBase + '/api/Task/api/SaveData', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: headerPayload
+                })
+                    .then(function (resp) {
+                        if (!resp.ok) throw new Error('Task save failed: ' + resp.status);
+                        return extractIdFromResponse(resp);
+                    })
+                    .then(function (taskId) {
+                        var now = new Date();
+                        var timeStr = padTwo(now.getHours()) + ':' + padTwo(now.getMinutes()) + ':' + padTwo(now.getSeconds());
+                        var dtlPayload = JSON.stringify({
+                            id: 0,
+                            mTransNo: taskId,
+                            mCount: 0,
+                            slNo: formData.transSlNo || 1,
+                            transSlNo: formData.transSlNo || 1,
+                            assignto: UserNo,
+                            assignName: assignName,
+                            Acceptdate: formData.duedate || '',
+                            assignDate: now.toISOString(),
+                            assignTime: timeStr,
+                            systemIP: '1',
+                            createdBy: UserNo,
+                            createdOn: now.toISOString(),
+                            subscID: Number(mSubscID) || 0,
+                            taskStatus: formData.status || 'Todo',
+                            status: existingId ? 'Update' : 'Insert'
+                        });
+
+                        return fetch(DomainBase + '/api/Task/api/SaveDataDtl', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: dtlPayload
+                        });
+                    })
+                    .then(function (resp) {
+                        if (!resp.ok) throw new Error('Assign detail failed: ' + resp.status);
+                        deferred.resolve();
+                    })
+                    .catch(function (err) { deferred.reject(err); });
+            });
+            return deferred.promise();
+        }
+
+        function updateTaskStatusApi(mTransNo, transSlNo, newStatus) {
+            var deferred = $.Deferred();
+            var url = DomainBase + '/api/Task/UpdateTask?MTransNo=' + encodeURIComponent(mTransNo) + '&UserNo=' + encodeURIComponent(UserNo) + '&TaskStatus=' + encodeURIComponent(newStatus) + '&TransSlNo=' + encodeURIComponent(transSlNo);
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                success: function (res) {
+                    deferred.resolve(res);
+                },
+                error: function (xhr) {
+                    if (xhr.status === 405) {
+                        $.ajax({
+                            url: url,
+                            type: 'GET',
+                            success: function (res) { deferred.resolve(res); },
+                            error: function (err) { deferred.reject(err); }
+                        });
+                    } else {
+                        deferred.reject(xhr);
+                    }
+                }
+            });
+            return deferred.promise();
+        }
+
+        function filterByCreator(rows, uNo) {
+            var arr = [];
+            $.each(rows, function (i, row) {
+                var cBy = (row.createdBy != null) ? row.createdBy : row.CreatedBy;
+                if (cBy != null && Number(cBy) === Number(uNo)) { arr.push(row); }
+            });
+            return arr;
+        }
+
+        function loadRecords() {
+            var deferred = $.Deferred();
+            mockTaskList = [];
+            if (!DomainBase) { deferred.resolve(); return deferred.promise(); }
+
+            // TaskDataUser returns only tasks assigned to the given userNo
+            var url = DomainBase + '/api/Task/TaskDataUser?userNo=' + encodeURIComponent(UserNo);
+            $.ajax({
+                url: url, method: 'GET',
+                success: function (data) {
+                    var raw = toArray(data);
+                    $.each(raw, function (i, row) {
+                        // Normalise status to match the Kanban column values
+                        var rawStatus = (row.taskStatus || row.TaskStatus || row.status || row.Status || 'Open').trim();
+                        var normStatus = rawStatus;
+                        if (/in.?progress|inprogress/i.test(rawStatus)) normStatus = 'In Progress';
+                        else if (/done|complet/i.test(rawStatus)) normStatus = 'Complete';
+                        else normStatus = 'Open';
+
+                        mockTaskList.push({
+                            mTransNo: row.mTransNo || row.MTransNo,
+                            transSlNo: row.transSlNo,
+                            taskName: row.taskName || row.TaskName || '',
+                            assignee: row.assignName || row.AssignName || 'Self',
+                            priority: row.taskPriority || row.TaskPriority || row.priority || 'Medium',
+                            frequency: (row.taskAssignType || row.frequency || 'particular').toString().toLowerCase().trim(),
+                            status: normStatus,
+                            duedate: row.duedate ? row.duedate.split('T')[0] : '',
+                            dueTime: row.dueTime || row.DueTime || '',
+                            description: row.taskDescription || row.TaskDescription || ''
+                        });
+                    });
+                    deferred.resolve();
+                },
+                error: function (err) {
+                    console.warn('loadRecords error:', err);
+                    deferred.reject(err);
+                }
+            });
+            return deferred.promise();
+        }
+
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 4 — UI HELPERS
+        // ─────────────────────────────────────────────────────────────────
+        function formatDateDisplay(ymd) {
+            var s = $.trim(String(ymd || '')).slice(0, 10);
+            if (!s) return '—';
+            var p = s.split('-');
+            if (p.length !== 3) return s;
+            return p[2] + '-' + p[1] + '-' + p[0];
+        }
+        function getFilteredTasks() {
+            var todayStr = new Date().toISOString().split('T')[0];
+            var filtered = $.grep(mockTaskList, function (t) {
+                var taskduedate = t.duedate || '';
+                if (selectedDateTab === 'today') {
+                    return taskduedate === todayStr;
+                } else if (selectedDateTab === 'upcoming') {
+                    return taskduedate > todayStr;
+                } else if (selectedDateTab === 'past') {
+                    return taskduedate < todayStr && t.status !== 'Complete';
+                } else if (selectedDateTab === 'completed') {
+                    return t.status === 'Complete';
+                }
+                return true;
+            });
+            filtered.sort(function (a, b) {
+                return (Number(b.mTransNo) || 0) - (Number(a.mTransNo) || 0);
+            });
+            return filtered;
+        }
+
+        function populateModalFields(data) {
+            document.getElementById('task-id').value = data.mTransNo;
+            document.getElementById('task-name').value = data.taskName;
+            document.getElementById('task-priority').value = data.priority;
+            document.getElementById('task-due-date').value = data.duedate || '';
+            document.getElementById('task-due-time').value = data.dueTime || '';
+            document.getElementById('task-description').value = data.description;
+            var freqEl = document.getElementById('task-frequency');
+            if (freqEl) {
+                var valToSet = (data.frequency || 'particular').toLowerCase();
+                if (valToSet === 'one-time' || valToSet === 'onetime') valToSet = 'particular';
+                $(freqEl).val(valToSet).trigger('change');
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 5 — FEATURE LOGIC
+        // ─────────────────────────────────────────────────────────────────
+        window.loadTasksIntoGrid = function () {
+            var grid = document.getElementById('task-grid');
+            if (grid) {
+                var data = getFilteredTasks();
+                if (typeof grid.setOptions === 'function') {
+                    grid.setOptions({ rowData: data });
+                }
+                if (typeof grid.setRowData === 'function') {
+                    grid.setRowData(data);
+                }
+            }
+            window.updateDashboardKPIs();
+            window.renderBoard();
+        };
+
+        window.updateDashboardKPIs = function () {
+            var filtered = getFilteredTasks();
+            var total = filtered.length;
+            var open = filtered.filter(t => t.status === 'Open').length;
+            var progress = filtered.filter(t => t.status === 'In Progress').length;
+            var Complete = filtered.filter(t => t.status === 'Complete').length;
+
+            document.getElementById('total-badge').innerText = total + (total === 1 ? ' task' : ' tasks');
+
+            var kpis = document.getElementById('task-kpis');
+            if (kpis && typeof kpis.setCards === 'function') {
+                kpis.setCards([
+                    { label: 'Total Tasks', value: total, icon: 'bi-grid-fill', color: 'text-secondary-500' },
+                    { label: 'To Do', value: open, icon: 'bi-hourglass', color: 'text-gray-600' },
+                    { label: 'In Progress', value: progress, icon: 'bi-arrow-repeat', color: 'text-blue-600' },
+                    { label: 'Complete', value: Complete, icon: 'bi-check-circle-fill', color: 'text-green-600' }
+                ]);
+            }
+        };
+
+        window.renderBoard = function () {
+            var columns = ['Open', 'In Progress', 'Complete'];
+            columns.forEach(col => {
+                var zone = document.querySelector('[data-drop-zone="' + col + '"]');
+                var badge = document.getElementById('count-' + (col === 'Open' ? 'todo' : col === 'In Progress' ? 'progress' : 'Complete'));
+                if (!zone) return;
+
+                var tasks = getFilteredTasks().filter(t => t.status === col);
+                badge.innerText = tasks.length;
+
+                if (tasks.length === 0) {
+                    zone.innerHTML = '<div class="h-24 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 text-xs">No tasks</div>';
+                    return;
+                }
+
+                zone.innerHTML = tasks.map(t => {
+                    var priorityBadge = '';
+                    if (t.priority === 'High') {
+                        priorityBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-700 border border-red-100">High</span>';
+                    } else if (t.priority === 'Medium') {
+                        priorityBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">Medium</span>';
+                    } else {
+                        priorityBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-50 text-gray-700 border border-gray-100">Low</span>';
+                    }
+
+                    var todayStr = new Date().toISOString().split('T')[0];
+                    var dueDateClass = "";
+                    if (t.status !== 'Complete' && t.duedate) {
+                        var d = t.duedate.split('T')[0];
+                        if (d < todayStr) {
+                            dueDateClass = "bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium";
+                        } else if (d === todayStr) {
+                            dueDateClass = "bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded font-medium";
+                        } else {
+                            dueDateClass = "bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium";
+                        }
+                    }
+
+                    return [
+                        '<div class="bg-white border border-gray-200/80 rounded-xl p-3 shadow-sm relative cursor-grab active:cursor-grabbing hover:border-secondary-200 transition-all duration-200 card-task" draggable="true" data-id="', t.transSlNo, '">',
+                        '  <div class="flex items-center justify-between">',
+                        '    <div class="flex items-center gap-2">',
+                        '      <span class="text-[10px] font-bold text-gray-400">#', t.mTransNo, '</span>',
+                        priorityBadge,
+                        '    </div>',
+                        '    <div class="relative dropdown-status-container">',
+                        '      <button type="button" class="btn-status-dropdown text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-50 transition-colors" data-id="', t.transSlNo, '">',
+                        '        <i class="bi bi-three-dots-vertical"></i>',
+                        '      </button>',
+                        '      <div class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1 text-xs text-gray-700 font-medium whitespace-nowrap dropdown-status-menu">',
+                        '        <button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 btn-set-status" data-status="Open" data-id="', t.transSlNo, '"><span class="w-2 h-2 rounded-full bg-gray-400"></span> Move to To Do</button>',
+                        '        <button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 btn-set-status" data-status="In Progress" data-id="', t.transSlNo, '"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Move to In Progress</button>',
+                        '        <button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 btn-set-status" data-status="Complete" data-id="', t.transSlNo, '"><span class="w-2 h-2 rounded-full bg-green-500"></span> Move to Complete</button>',
+                        '      </div>',
+                        '    </div>',
+                        '  </div>',
+                        '  <h4 class="mt-2 text-sm font-bold text-gray-800 line-clamp-1">', t.taskName, '</h4>',
+                        '  <p class="mt-1 text-xs text-gray-500 line-clamp-2">', t.description || 'No description provided.', '</p>',
+                        '  <div class="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">',
+                        '    <span><i class="bi bi-clock mr-1"></i>Due Date & Time</span>',
+                        '    <span class="', dueDateClass, '"><i class="bi bi-calendar3 mr-1"></i>', formatDateDisplay(t.duedate), ' ', t.dueTime, '</span>',
+                        '  </div>',
+                        '</div>'
+                    ].join('');
+                }).join('');
+            });
+        };
+
+        window.viewRecord = function (rowId, rowData) {
+            var modal = document.getElementById('task-modal');
+            modal.open({
+                mode: 'view',
+                title: 'View Task Detail',
+                subtitle: 'Reviewing: ' + rowData.taskName
+            });
+            populateModalFields(rowData);
+        };
+
+        var editingSlNo = null;
+
+        window.editRecord = function (rowId, rowData) {
+            editingSlNo = rowData.transSlNo;
+            var modal = document.getElementById('task-modal');
+            modal.open({
+                mode: 'edit',
+                title: 'Edit Task',
+                subtitle: 'Update details for: ' + rowData.taskName,
+                onSubmit: function () {
+                    var form = document.getElementById('task-form');
+                    if (form && !form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    var taskIdVal = Number(document.getElementById('task-id').value);
+                    var taskIndex = mockTaskList.findIndex(t => t.transSlNo === editingSlNo);
+                    var existingStatus = taskIndex !== -1 ? mockTaskList[taskIndex].status : 'Todo';
+                    var existingSlNo = taskIndex !== -1 ? mockTaskList[taskIndex].transSlNo : 1;
+                    var freqEl = document.getElementById('task-frequency');
+                    var freqVal = freqEl ? freqEl.value : 'particular';
+                    var formData = {
+                        taskName: document.getElementById('task-name').value.trim(),
+                        priority: document.getElementById('task-priority').value,
+                        taskAssignType: freqVal,
+                        duedate: document.getElementById('task-due-date').value,
+                        dueTime: document.getElementById('task-due-time').value,
+                        description: document.getElementById('task-description').value.trim(),
+                        status: existingStatus,
+                        transSlNo: existingSlNo
+                    };
+
+                    Swal.fire({ title: 'Saving...', text: 'Please wait', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                    saveNewRecord(formData, taskIdVal).done(function () {
+                        modal.close();
+                        Swal.fire({ title: 'Saved!', text: 'Task details updated successfully.', icon: 'success', heightAuto: false });
+                        window.loadTasksIntoGrid();
+                    }).fail(function (err) {
+                        Swal.fire('Error', err.message || 'Failed to update task', 'error');
+                    });
+                }
+            });
+
+            populateModalFields(rowData);
+        };
+
+        window.deleteRecord = function (rowId, rowData) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to delete this task?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!',
+                heightAuto: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // If you have a delete API, call it here. For now UI removal.
+                    mockTaskList = mockTaskList.filter(t => t.transSlNo !== rowData.transSlNo);
+                    Swal.fire({ title: 'Deleted!', text: 'Task deleted successfully.', icon: 'success', heightAuto: false });
+                    window.loadTasksIntoGrid();
+                }
+            });
+        };
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 6 — COMPONENTS
+        // ─────────────────────────────────────────────────────────────────
+        function renderComponents() {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+
+            var grid = document.getElementById('task-grid');
+            if (grid) {
+                grid.setOptions({
+                    columns: [
+                        { field: 'mTransNo', headerName: 'TaskID', width: 100, minWidth: 80 },
+                        { field: 'taskName', headerName: 'Task', flex: 2, minWidth: 200 },
+                        { field: 'assignee', headerName: 'Assignee', flex: 1, minWidth: 120 },
+                        { field: 'priority', headerName: 'Priority', flex: 1, minWidth: 100 },
+                        { field: 'duedate', headerName: 'Due Date', flex: 1, minWidth: 120, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
+                        { field: 'dueTime', headerName: 'Due Time', flex: 1, minWidth: 100 },
+                        { 
+                            field: 'status', headerName: 'Status', flex: 1, minWidth: 140,
+                            cellRenderer: function(params) {
+                                var slNo = params.data.transSlNo;
+                                var status = params.value;
+                                var colorClass = status === 'Complete' ? 'text-green-700 bg-green-50' : (status === 'In Progress' ? 'text-blue-700 bg-blue-50' : 'text-gray-700 bg-gray-50');
+                                
+                                return '<select class="status-select ' + colorClass + ' border border-gray-200 rounded px-2 py-1 text-xs font-semibold outline-none cursor-pointer w-full mt-1.5" data-id="' + slNo + '">' +
+                                    '<option value="Open" ' + (status === 'Open' ? 'selected' : '') + '>To Do</option>' +
+                                    '<option value="In Progress" ' + (status === 'In Progress' ? 'selected' : '') + '>In Progress</option>' +
+                                    '<option value="Complete" ' + (status === 'Complete' ? 'selected' : '') + '>Complete</option>' +
+                                '</select>';
+                            }
+                        },
+                        { field: 'description', headerName: 'Description', flex: 2, minWidth: 220 }
+                    ],
+                    gridOptions: {
+                        onRowClicked: function (params) {
+                            if (params.event && params.event.target && params.event.target.closest('.status-select')) {
+                                return;
+                            }
+                            if (params.data) {
+                                window.viewRecord(params.data.transSlNo, params.data);
+                            }
+                        },
+                        getRowStyle: function () {
+                            return { cursor: 'pointer' };
+                        }
+                    },
+                    rowData: []
+                });
+                grid.render();
+            }
+
+            window.loadTasksIntoGrid();
+        }
+
+        function initSelect2Fields() {
+            var priorityEl = document.getElementById('task-priority');
+            var modal = document.getElementById('task-modal');
+
+            if (priorityEl && !$(priorityEl).hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(priorityEl, {
+                    placeholder: 'Select Priority...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false
+                });
+            }
+
+            var freqEl = document.getElementById('task-frequency');
+            if (freqEl && !$(freqEl).hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(freqEl, {
+                    placeholder: 'Select Frequency...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false
+                });
+            }
+        }
+
+        function initDragAndDrop() {
+            var board = document.getElementById('board-view');
+            if (!board) return;
+
+            board.addEventListener('dragstart', function (e) {
+                var card = e.target.closest('.card-task');
+                if (!card) return;
+                dragRecordId = card.getAttribute('data-id');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', dragRecordId);
+                card.classList.add('opacity-50');
+            });
+
+            board.addEventListener('dragend', function (e) {
+                var card = e.target.closest('.card-task');
+                if (card) card.classList.remove('opacity-50');
+                dragRecordId = null;
+            });
+
+            board.addEventListener('dragover', function (e) {
+                var zone = e.target.closest('.drop-zone');
+                if (!zone) return;
+                e.preventDefault();
+                zone.classList.add('bg-secondary-50/40', 'border-secondary-300', 'border-2', 'border-dashed');
+            });
+
+            board.addEventListener('dragleave', function (e) {
+                var zone = e.target.closest('.drop-zone');
+                if (!zone) return;
+                zone.classList.remove('bg-secondary-50/40', 'border-secondary-300', 'border-2', 'border-dashed');
+            });
+
+            board.addEventListener('drop', function (e) {
+                var zone = e.target.closest('.drop-zone');
+                if (!zone) return;
+                e.preventDefault();
+                zone.classList.remove('bg-secondary-50/40', 'border-secondary-300', 'border-2', 'border-dashed');
+
+                var status = zone.getAttribute('data-drop-zone');
+                var recordId = dragRecordId || e.dataTransfer.getData('text/plain');
+
+                var task = mockTaskList.find(t => String(t.transSlNo) === String(recordId));
+                if (task && task.status !== status) {
+                    var originalStatus = task.status;
+                    task.status = status;
+                    var slNo = task.transSlNo || 1;
+                    updateTaskStatusApi(task.mTransNo, slNo, status).done(function () {
+                        window.loadTasksIntoGrid();
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Status updated to ' + status,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    }).fail(function () {
+                        task.status = originalStatus; // revert
+                        window.loadTasksIntoGrid(); // reload grid to revert in UI
+                        Swal.fire('Error', 'Failed to update status', 'error');
+                    });
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+        function bindEvents() {
+            // Handle table view status select change
+            $(document).on('change', '.status-select', function (e) {
+                var slNo = $(this).attr('data-id');
+                var newStatus = $(this).val();
+
+                var task = mockTaskList.find(t => String(t.transSlNo) === String(slNo));
+                if (task) {
+                    var originalStatus = task.status;
+                    task.status = newStatus;
+                    var transSlNo = task.transSlNo || 1;
+                    
+                    updateTaskStatusApi(task.mTransNo, transSlNo, newStatus).done(function () {
+                        window.loadTasksIntoGrid();
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Status updated to ' + newStatus,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    }).fail(function () {
+                        task.status = originalStatus; // revert
+                        window.loadTasksIntoGrid(); // reload grid to revert in UI
+                        Swal.fire('Error', 'Failed to update status', 'error');
+                    });
+                }
+            });
+
+            // Handle date filtering tabs click
+            $(document).on('click', '[data-date-tab]', function () {
+                var tab = $(this).attr('data-date-tab');
+                selectedDateTab = tab;
+
+                $('[data-date-tab]').removeClass('border-secondary-500 text-secondary-500')
+                    .addClass('border-transparent text-gray-500 hover:text-gray-800');
+
+                $(this).removeClass('border-transparent text-gray-500 hover:text-gray-800')
+                    .addClass('border-secondary-500 text-secondary-500');
+
+                window.loadTasksIntoGrid();
+            });
+
+            $('#btn-view-board').on('click', function () {
+                $('#board-view').removeClass('hidden');
+                $('#table-view').addClass('hidden');
+                $(this).addClass('bg-white text-secondary-500 shadow-sm border border-gray-100').removeClass('text-gray-500 hover:text-gray-800');
+                $('#btn-view-table').removeClass('bg-white text-secondary-500 shadow-sm border border-gray-100').addClass('text-gray-500 hover:text-gray-800');
+            });
+
+            $('#btn-view-table').on('click', function () {
+                $('#board-view').addClass('hidden');
+                $('#table-view').removeClass('hidden');
+                $(this).addClass('bg-white text-secondary-500 shadow-sm border border-gray-100').removeClass('text-gray-500 hover:text-gray-800');
+                $('#btn-view-board').removeClass('bg-white text-secondary-500 shadow-sm border border-gray-100').addClass('text-gray-500 hover:text-gray-800');
+
+                var grid = document.getElementById('task-grid');
+                if (grid && typeof grid.render === 'function') {
+                    grid.render();
+                }
+            });
+
+            var addBtn = document.getElementById('add-task-btn');
+            var modal = document.getElementById('task-modal');
+
+            if (addBtn && modal) {
+                addBtn.addEventListener('click', function () {
+                    modal.open({
+                        mode: 'add',
+                        title: 'Add Task',
+                        subtitle: 'Create and assign a new task',
+                        onSubmit: function () {
+                            var form = document.getElementById('task-form');
+                            if (form && !form.checkValidity()) {
+                                form.reportValidity();
+                                return;
+                            }
+
+                                var freqEl = document.getElementById('task-frequency');
+                                var freqVal = freqEl ? freqEl.value : 'particular';
+                                var formData = {
+                                    taskName: document.getElementById('task-name').value.trim(),
+                                    priority: document.getElementById('task-priority').value,
+                                    taskAssignType: freqVal,
+                                    duedate: document.getElementById('task-due-date').value,
+                                    dueTime: document.getElementById('task-due-time').value,
+                                description: document.getElementById('task-description').value.trim(),
+                                status: 'Open',
+                                transSlNo: 1
+                            };
+
+                            Swal.fire({ title: 'Saving...', text: 'Please wait', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                            saveNewRecord(formData, null).done(function () {
+                                modal.close();
+                                Swal.fire({ title: 'Success!', text: 'Task created successfully.', icon: 'success', heightAuto: false });
+                                window.loadTasksIntoGrid();
+                            }).fail(function (err) {
+                                Swal.fire('Error', err.message || 'Failed to create task', 'error');
+                            });
+                        }
+                    });
+
+                    var form = document.getElementById('task-form');
+                    if (form) form.reset();
+                    document.getElementById('task-id').value = '0';
+                    initSelect2Fields();
+                });
+            }
+
+            // Click card to open view details modal
+            $(document).on('click', '.card-task', function (e) {
+                if ($(e.target).closest('.btn-status-dropdown, .dropdown-status-menu').length) {
+                    return;
+                }
+                var slNo = $(this).attr('data-id');
+                var task = mockTaskList.find(t => String(t.transSlNo) === String(slNo));
+                if (task) {
+                    window.viewRecord(slNo, task);
+                }
+            });
+
+            // Toggle 3-dots dropdown menu visibility
+            $(document).on('click', '.btn-status-dropdown', function (e) {
+                e.stopPropagation();
+                var $menu = $(this).siblings('.dropdown-status-menu');
+                $('.dropdown-status-menu').not($menu).addClass('hidden');
+                $menu.toggleClass('hidden');
+            });
+
+            // Close dropdowns when clicking outside
+            $(document).on('click', function () {
+                $('.dropdown-status-menu').addClass('hidden');
+            });
+
+            // Set task status via 3-dots dropdown menu options
+            $(document).on('click', '.btn-set-status', function (e) {
+                e.stopPropagation();
+                var slNo = $(this).attr('data-id');
+                var newStatus = $(this).attr('data-status');
+
+                var task = mockTaskList.find(t => String(t.transSlNo) === String(slNo));
+                if (task) {
+                    var originalStatus = task.status;
+                    task.status = newStatus;
+                    var transSlNo = task.transSlNo || 1;
+                    
+                    updateTaskStatusApi(task.mTransNo, transSlNo, newStatus).done(function () {
+                        window.loadTasksIntoGrid();
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Status updated to ' + newStatus,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    }).fail(function () {
+                        task.status = originalStatus; // revert
+                        window.loadTasksIntoGrid(); // reload grid to revert in UI
+                        Swal.fire('Error', 'Failed to update status', 'error');
+                    });
+                }
+                $('.dropdown-status-menu').addClass('hidden');
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 8 — INIT
+        // ─────────────────────────────────────────────────────────────────
+        $(function () {
+            renderComponents();
+            initDragAndDrop();
+            bindEvents();
+
+            // Fetch initial tasks and render
+            loadRecords().then(window.loadTasksIntoGrid);
+        });
+    </script>
+</body>
+
+</html>

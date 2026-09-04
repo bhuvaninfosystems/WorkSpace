@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Task Groups</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+
+    <link href="../../Config/cdn/select2.min.css" rel="stylesheet" />
+    <script src="../../Config/cdn/select2.full.min.js"></script>
+    <script src="../../Config/cdn/sweetalert2_11.js"></script>
+
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+    <script src="../../UI_Components/modals/components/input-field.js"></script>
+    <script src="../../UI_Components/modals/components/select2-field.js"></script>
+    <script src="../../UI_Components/modals/popup-modal.js"></script>
+    <script src="../../UI_Components/layout/data-grid.js"></script>
+    <script src="../../UI_Components/modals/components/modal-grid.js"></script>
+
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <div class="h-full w-full flex relative">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- Top Header Navbar -->
+            <div id="top-nav-container"></div>
+
+            <!-- Main Canvas View -->
+            <main id="main-canvas" onclick="window.appNav && window.appNav.closeSubNavOnDesktop()"
+                class="relative flex-1 bg-[#f9fafb] overflow-hidden flex flex-col">
+
+                <!-- KPI Dashboard Widgets Section -->
+                <premium-kpi-manager id="kpi-manager" data-columns="4"></premium-kpi-manager>
+
+                <!-- Table View Listing -->
+                <div id="table-view" class="flex-1 min-h-0 flex flex-col">
+                    <!-- Add Group Button (will be moved into the grid toolbar actions slot) -->
+                    <premium-button id="add-group-btn" icon="bi-plus-circle" label="Add Group" variant="solid"
+                        class="hidden" bg-color="bg-white" border-color="border-gray-300"
+                        text-color="text-black"></premium-button>
+                    <premium-grid id="page-grid" class="w-full flex-1 min-h-0" data-show-sino="true"
+                        data-show-actions="true" data-row-id-field="id" data-pagination="true"
+                        data-pagination-page-size="15" data-pagination-page-size-selector="[5, 10, 15, 20, 50]"
+                        data-floating-filter="false" data-row-height="40" data-auto-fill-height="true"
+                        data-min-height="200" data-suppress-size-to-fit="false" data-action-view="viewRecord"
+                        data-action-edit="editRecord" data-action-delete="deleteRecord"></premium-grid>
+                </div>
+
+                <!-- Main Record Popup Modal -->
+                <premium-popup-modal id="main-modal" data-width="720px" data-max-width="95%" data-height="600px">
+                    <template data-modal-body>
+                        <form id="main-form" class="space-y-4" onsubmit="return false;">
+                            <input type="hidden" id="group-id" value="0">
+
+
+                            <div class="grid md:grid-cols-2 grid-cols-1 gap-2">
+                                <!-- Company -->
+                                <div class="space-y-1">
+                                    <label data-premium-label>Company *</label>
+                                    <select id="field-company" class="w-full" data-premium-input required></select>
+                                </div>
+                                <!-- Group Name -->
+                                <div class="space-y-1">
+                                    <label data-premium-label>Group Name *</label>
+                                    <input type="text" id="field-name" data-premium-input placeholder="Enter group name"
+                                        required>
+                                </div>
+                            </div>
+
+                            <!-- Members Listing Grid -->
+                            <div class="space-y-2 pt-2">
+                                <div class="flex items-end justify-between">
+                                    <label data-premium-label>Group
+                                        Members</label>
+                                    <premium-button id="btn-open-nested" icon="bi-person-plus" label="Add Member"
+                                        variant="outline" size="sm" bg-color="bg-white" text-color="text-black"
+                                        border-color="border-gray-200"></premium-button>
+                                </div>
+                                <premium-modal-grid id="items-grid" class="w-full"
+                                    style="height: 280px;"></premium-modal-grid>
+                            </div>
+                        </form>
+                    </template>
+                </premium-popup-modal>
+
+                <!-- Nested Member Picker Popup Modal -->
+                <premium-popup-modal id="nested-modal" data-width="560px" data-max-width="95%" data-height="520px">
+                    <template data-modal-body>
+                        <form id="nested-form" class="space-y-4" onsubmit="return false;">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label data-premium-label>Company *</label>
+                                    <select id="field-picker-company" class="w-full" data-premium-input></select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>Designation *</label>
+                                    <select id="field-role" class="w-full" data-premium-input></select>
+                                </div>
+                            </div>
+
+                            <!-- User Picker Grid -->
+                            <div class="space-y-2 pt-2">
+                                <label data-premium-label>Select Users</label>
+                                <premium-modal-grid id="picker-grid" class="w-full"
+                                    style="height: 280px;"></premium-modal-grid>
+                            </div>
+                        </form>
+                    </template>
+                </premium-popup-modal>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div id="bottom-nav-container"></div>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ Task Groups Master                                               ║
+        // ║ Type-1 module using AccountMaster-style structure.               ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        //  SECTIONS:  1-CONSTANTS  2-STATE  3-DATA  4-UI HELPERS
+        //             5-FEATURE LOGIC  6-COMPONENTS  7-EVENTS  8-INIT
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 1 — CONSTANTS
+        // ─────────────────────────────────────────────────────────────────
+        if (!localStorage.getItem('LogUser')) { window.location.href = '../../index.html'; }
+        const DomainName = localStorage.getItem('Domain') || '';
+        const UserNo = Number(JSON.parse(localStorage.getItem('LogUser')).mTransNo);
+        const mSubscID = JSON.parse(localStorage.getItem('LogUser')).subscID || 1020;
+        const mUserType = JSON.parse(localStorage.getItem('LogUser')).userType;
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 2 — STATE
+        // ─────────────────────────────────────────────────────────────────
+        var pageGridApi = null;
+        var itemsGridApi = null;
+        var pickerGridApi = null;
+
+        var recordList = [];
+        var modalItems = [];
+        var pickerRows = [];
+        var userCache = {};
+        var userCacheLoaded = false;
+        var modalMode = 'add';
+        var editingRecord = null;
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 3 — DATA
+        // ─────────────────────────────────────────────────────────────────
+        // (No lookup arrays needed; data is fetched natively by grid and Select2 endpoints)
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 4 — UI HELPERS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 4.1 — Build User Label
+        // Formats a user row into an ID/Name display string.
+        function buildUserLabel(row) {
+            var uname = $.trim(row.userName || row.UserName || row.name || '');
+            var uid = (row.userId != null) ? String(row.userId) : '';
+            if (uid && uname) return uid + ' \u2014 ' + uname;
+            return uname || ('User ' + (row.mTransNo || row.userNo));
+        }
+
+        // 4.2 — Get ID Lookup
+        // Converts an array of objects into a boolean map keyed by string ID.
+        function getIdLookup(list) {
+            var map = {};
+            $.each(list || [], function (i, item) { map[String(item.id)] = true; });
+            return map;
+        }
+
+        // 4.3 — Copy List
+        // Creates a deep copy of an array of objects.
+        function copyList(list) {
+            var copy = [];
+            $.each(list || [], function (i, item) { copy.push($.extend({}, item)); });
+            return copy;
+        }
+
+        // 4.4 — Parse Members
+        // Converts a comma-separated string of User IDs into objects matched against the userCache.
+        function parseMembers(str) {
+            if (!str || !$.trim(str.toString())) return [];
+            var list = [];
+            $.each(String(str).split(','), function (i, part) {
+                var id = $.trim(part);
+                var cached = id ? userCache[id] : null;
+                if (!id) return;
+                list.push({
+                    id: id,
+                    name: cached ? cached.name : 'User ' + id,
+                    role: cached ? (cached.role || '') : ''
+                });
+            });
+            return list;
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 5 — FEATURE LOGIC
+        // ─────────────────────────────────────────────────────────────────
+
+        // 5.1 — Load Groups Into Grid
+        // Fetches all task groups from the API, parses their members, and updates the grid.
+        function loadGroupsIntoGrid() {
+            var grid = document.getElementById('page-grid');
+            if (grid && typeof grid.setLoading === 'function') grid.setLoading(true, 'Loading groups...');
+
+            loadUserCache(function () {
+                $.ajax({
+                    url: DomainName + '/api/TaskGroup/GetData/' + mSubscID,
+                    method: 'GET',
+                    success: function (result) {
+                        var raw = Array.isArray(result) ? result : (result && result.data ? result.data : []);
+                        recordList = [];
+                        $.each(raw, function (i, row) {
+                            var id = row.mTransNo || row.MTransNo || row.id || row.Id;
+                            var name = $.trim(row.groupName || row.GroupName || '') || ('Group ' + id);
+                            var members = parseMembers(row.groupTeam || row.GroupTeam || '');
+
+                            if (id) {
+                                recordList.push({
+                                    id: String(id),
+                                    groupName: name,
+                                    company: $.trim(row.grpCompany || row.GrpCompany || ''),
+                                    members: members
+                                });
+                            }
+                        });
+
+                        if (grid && typeof grid.setRowData === 'function') grid.setRowData(recordList);
+                        window.updateDashboardKPIs();
+                    },
+                    error: function (err) {
+                        console.error('loadGroupsIntoGrid error:', err);
+                        Swal.fire({ title: 'Error', text: 'Could not load groups.', icon: 'error', timer: 2000, showConfirmButton: false, heightAuto: false });
+                    },
+                    complete: function () {
+                        if (grid && typeof grid.setLoading === 'function') grid.setLoading(false);
+                    }
+                });
+            });
+        }
+
+        // 5.2 — Load User Cache
+        // Pre-fetches all users to build labels and properties for group members.
+        function loadUserCache(callback) {
+            if (userCacheLoaded) {
+                if (callback) callback();
+                return;
+            }
+            $.ajax({
+                url: DomainName + '/api/UserMaster/api/GetData/List?SubscID=' + mSubscID,
+                method: 'GET',
+                success: function (result) {
+                    var data = Array.isArray(result) ? result : (result && result.data ? result.data : []);
+                    $.each(data, function (i, row) {
+                        var id = row.mTransNo || row.userNo;
+                        if (!id) return;
+                        userCache[String(id)] = {
+                            name: buildUserLabel(row),
+                            role: $.trim(row.designation || row.Designation || row.desigName || row.DesignationName || ''),
+                            company: $.trim(row.oprCompany || row.branch || row.company || '')
+                        };
+                    });
+                    userCacheLoaded = true;
+                    if (callback) callback();
+                },
+                error: function (err) {
+                    console.warn('loadUserCache error:', err);
+                    if (callback) callback();
+                }
+            });
+        }
+
+        // 5.3 — Save Record
+        // Validates and constructs the group payload for Insert or Update.
+        function saveRecord() {
+            var modal = document.getElementById('main-modal');
+            var name = $.trim(document.getElementById('field-name').value);
+            var companyVal = $('#field-company').val();
+
+            if (!name || !companyVal) {
+                Swal.fire({ title: 'Validation Error', text: 'Group Name and Company are required.', icon: 'warning', heightAuto: false });
+                return;
+            }
+
+            var isEdit = (modalMode === 'edit' && editingRecord);
+            var teamIds = [];
+            $.each(modalItems, function (i, m) {
+                var id = $.trim(String(m.id));
+                if (id) teamIds.push(id);
+            });
+
+            var payload = {
+                mTransNo: isEdit ? Number(editingRecord.id) : 0,
+                mCount: 0,
+                grpCompany: companyVal,
+                groupName: name,
+                groupTeam: teamIds.join(','),
+                systemIP: '1',
+                lockStatus: 'Y',
+                createdBy: UserNo,
+                createdOn: new Date().toISOString(),
+                subscID: mSubscID,
+                status: isEdit ? 'Update' : 'Insert'
+            };
+
+            if (modal && typeof modal.setLoading === 'function') modal.setLoading(true, "Submitting record. Please wait...");
+
+            $.ajax({
+                url: DomainName + '/api/TaskGroup/SaveData',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function () {
+                    Swal.fire({ title: 'Saved!', text: isEdit ? 'Group updated successfully.' : 'Group created successfully.', icon: 'success', confirmButtonColor: '#10b981', heightAuto: false });
+                    modal.close();
+                    loadGroupsIntoGrid();
+                },
+                error: function (xhr) {
+                    console.error('saveRecord error:', xhr);
+                    Swal.fire({ title: 'Error', text: 'Could not save group. Please try again.', icon: 'error', heightAuto: false });
+                },
+                complete: function () {
+                    if (modal && typeof modal.setLoading === 'function') modal.setLoading(false);
+                }
+            });
+        }
+
+        // 5.4 — Delete Record With Reason
+        // API call to permanently delete a group based on the user-provided reason.
+        function deleteRecordWithReason(groupId, reason) {
+            var trimmed = $.trim(String(reason || ''));
+            if (!trimmed) {
+                Swal.fire({ title: 'Reason Required', text: 'Please enter a reason before removing this group.', icon: 'warning', heightAuto: false });
+                return;
+            }
+            $.ajax({
+                url: DomainName + '/api/TaskGroup/DeleteData/' + groupId + '?userId=' + UserNo + '&reason=' + encodeURIComponent(trimmed),
+                method: 'DELETE',
+                success: function () {
+                    Swal.fire({ title: 'Deleted!', text: 'Group deleted successfully.', icon: 'success', confirmButtonColor: '#10b981', heightAuto: false });
+                    loadGroupsIntoGrid();
+                },
+                error: function (xhr) {
+                    console.error('deleteGroupWithReason error:', xhr);
+                    Swal.fire({ title: 'Error', text: 'Could not delete group.', icon: 'error', heightAuto: false });
+                }
+            });
+        }
+
+        // 5.5 — Load Picker Users
+        // Filters locally cached users based on the selected Company and Designation.
+        function loadPickerUsers() {
+            var role = $.trim($('#field-role').val() || '');
+            var comp = $.trim($('#field-picker-company').val() || '');
+
+            if (!role && !comp) {
+                pickerRows = [];
+                refreshPickerGrid();
+                return;
+            }
+
+            var taken = getIdLookup(modalItems);
+            var allUsers = [];
+            $.each(userCache, function (id, u) {
+                allUsers.push({ id: id, name: u.name, role: u.role, company: u.company });
+            });
+
+            var matched = $.grep(allUsers, function (emp) {
+                var matchRole = !role || (emp.role || '').toLowerCase() === role.toLowerCase();
+                var matchComp = !comp || (emp.company || '').toLowerCase() === comp.toLowerCase();
+                return matchRole && matchComp;
+            });
+
+            var pool = matched.length ? matched : ((role || comp) ? matched : allUsers);
+            pickerRows = [];
+            $.each(pool, function (i, emp) {
+                var id = emp.id;
+                if (!id || taken[String(id)]) return;
+                pickerRows.push({ id: String(id), name: emp.name, role: emp.role });
+            });
+
+            refreshPickerGrid();
+        }
+
+        // 5.6 — Init Modal Form
+        // Configures Select2 components dynamically based on endpoints and assigns prefilled values.
+        function initModalForm(mode, data) {
+            data = data || {};
+            var modal = document.getElementById('main-modal');
+            var body = modal.getBodyElement();
+            if (!body) return;
+
+            var compEl = $(body).find('#field-company');
+            if (!compEl.hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(compEl[0], {
+                    width: '100%',
+                    placeholder: 'Select Company',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    endpoint: '/api/OtherMasters/api/GetData/Load?MasterType=Company&SubscID=0',
+                    mapItem: function (x) {
+                        return { id: x.masterName || x.branchCode || x, text: x.masterName || x.branchName || x };
+                    }
+                });
+            }
+
+            var compVal = data.company || '';
+            if (compVal && compEl.find('option[value="' + compVal + '"]').length === 0) {
+                compEl.append('<option value="' + compVal + '">' + compVal + '</option>');
+            }
+            compEl.val(compVal).trigger('change');
+
+            $(body).find('#field-name').val(data.groupName || '');
+
+            if (mode === 'view') {
+                $(body).find('input, select').prop('disabled', true);
+                $(body).find('.select2-container').css('pointer-events', 'none');
+            } else {
+                $(body).find('input, select').prop('disabled', false);
+                $(body).find('.select2-container').css('pointer-events', 'auto');
+            }
+        }
+
+        // 5.7 — View Record
+        // Opens the main modal in read-only mode, showing group members and details.
+        window.viewRecord = function (rowId, rowData) {
+            modalMode = 'view';
+            editingRecord = rowData;
+            modalItems = copyList(rowData.members);
+
+            var modal = document.getElementById('main-modal');
+            modal.open({
+                mode: 'view',
+                title: 'View Group Details',
+                subtitle: 'Reviewing: ' + rowData.groupName,
+                freezeInputs: true,
+                freezeMode: 'readonly'
+            });
+
+            document.getElementById('btn-open-nested').style.display = 'none';
+            initModalForm('view', rowData);
+            refreshItemsGrid();
+        };
+
+        // 5.8 — Edit Record
+        // Opens the main modal in edit mode, allowing modification of members and details.
+        window.editRecord = function (rowId, rowData) {
+            modalMode = 'edit';
+            editingRecord = rowData;
+            modalItems = copyList(rowData.members);
+
+            var modal = document.getElementById('main-modal');
+            modal.open({
+                mode: 'edit',
+                title: 'Edit Group',
+                subtitle: 'Modify group configuration',
+                onSubmit: function () { saveRecord(); }
+            });
+
+            document.getElementById('btn-open-nested').style.display = 'inline-flex';
+            initModalForm('edit', rowData);
+            refreshItemsGrid();
+        };
+
+        // 5.9 — Delete Record
+        // Prompts the user with a deletion reason dialog before executing the API delete call.
+        window.deleteRecord = function (rowId, rowData) {
+            Swal.fire({
+                title: 'Delete group "' + rowData.groupName + '"?',
+                text: "Describe why this group is being removed (required):",
+                icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Reason for deletion...',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Yes, delete it!',
+                heightAuto: false,
+                inputValidator: function (value) {
+                    if (!value || !$.trim(String(value))) return 'Please enter a reason for deletion.';
+                    return null;
+                }
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    deleteRecordWithReason(rowData.id, result.value);
+                }
+            });
+        };
+
+        // 5.10 — Pick Item
+        // Adds a user from the picker pool into the main modal's member list.
+        window.pickItem = function (userId) {
+            var role = $.trim($('#field-role').val() || '');
+            var comp = $.trim($('#field-picker-company').val() || '');
+
+            if (!role && !comp) {
+                Swal.fire({ title: 'Filter required', text: 'Select a company or designation before picking a user.', icon: 'warning', heightAuto: false });
+                return;
+            }
+
+            var user = null;
+            $.each(pickerRows, function (i, u) {
+                if (String(u.id) === String(userId)) { user = u; return false; }
+            });
+            if (!user) return;
+
+            var duplicate = false;
+            $.each(modalItems, function (i, m) {
+                if (m.id === userId) { duplicate = true; return false; }
+            });
+            if (duplicate) return;
+
+            modalItems.push({ id: user.id, name: user.name, role: user.role });
+            refreshItemsGrid();
+            refreshPickerGrid();
+        };
+
+        // 5.11 — Remove Item
+        // Removes a user from the main modal's member list.
+        window.removeItem = function (id) {
+            if (modalMode === 'view') return;
+            modalItems = $.grep(modalItems, function (m) { return m.id !== id; });
+            refreshItemsGrid();
+            refreshPickerGrid();
+        };
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 6 — COMPONENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 6.1 — Render Components
+        // Initializes the main navigation shell and premium data grid.
+        function renderComponents() {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+
+            var grid = document.getElementById('page-grid');
+            if (grid) {
+                grid.setOptions({
+                    columns: [
+                        { field: 'groupName', headerName: 'Group Name', flex: 1, minWidth: 200 },
+                        { field: 'company', headerName: 'Company', flex: 1, minWidth: 150 }
+                    ],
+                    rowData: []
+                });
+                grid.render();
+
+                var addBtn = document.getElementById('add-group-btn');
+                if (addBtn && typeof grid.getActionsSlot === 'function') {
+                    addBtn.classList.remove('hidden');
+                    grid.getActionsSlot().appendChild(addBtn);
+                }
+            }
+
+            loadGroupsIntoGrid();
+        }
+
+        // 6.2 — Refresh Items Grid
+        // Re-renders the internal grid inside the main modal showing selected members.
+        function refreshItemsGrid() {
+            var el = document.getElementById('items-grid');
+            if (!el) return;
+
+            var cols = [
+                { headerName: 'S.No', width: 70, minWidth: 60, maxWidth: 90, valueGetter: 'node.rowIndex + 1', sortable: false, filter: false },
+                { field: 'name', headerName: 'Name', flex: 1, minWidth: 160 },
+                { field: 'role', headerName: 'Role', width: 130 }
+            ];
+
+            if (modalMode !== 'view') {
+                cols.push({
+                    headerName: 'Action', width: 90, maxWidth: 100, sortable: false, filter: false,
+                    cellRenderer: function (params) {
+                        var id = params.data ? params.data.id : '';
+                        return `<div class="flex items-center justify-center h-full">
+                            <button type="button" onclick="event.stopPropagation(); window.removeItem('${id}')" class="text-gray-400 hover:text-red-500 transition-all duration-300" title="Remove">
+                                <i class="bi bi-trash3 text-base"></i>
+                            </button>
+                        </div>`;
+                    }
+                });
+            }
+
+            el.setOptions({
+                columns: cols,
+                rowData: modalItems.slice(),
+                rowHeight: 40,
+                headerHeight: 38
+            });
+            itemsGridApi = el.render();
+        }
+
+        // 6.3 — Refresh Picker Grid
+        // Re-renders the internal grid inside the nested modal showing available users.
+        function refreshPickerGrid() {
+            var el = document.getElementById('picker-grid');
+            if (!el) return;
+
+            var taken = getIdLookup(modalItems);
+            var available = [];
+            $.each(pickerRows, function (i, u) {
+                if (!taken[String(u.id)]) available.push(u);
+            });
+
+            el.setOptions({
+                columns: [
+                    { headerName: 'S.No', width: 70, minWidth: 60, maxWidth: 90, valueGetter: 'node.rowIndex + 1', sortable: false, filter: false },
+                    { field: 'name', headerName: 'Name', flex: 1, minWidth: 200 },
+                    {
+                        headerName: 'Action', width: 90, maxWidth: 100, sortable: false, filter: false,
+                        cellRenderer: function (params) {
+                            var id = params.data ? params.data.id : '';
+                            return `<div class="flex items-center justify-center h-full">
+                                <button type="button" onclick="event.stopPropagation(); window.pickItem('${id}')" class="text-gray-400 hover:text-secondary-600 transition-all duration-300" title="Add">
+                                    <i class="bi bi-plus-circle text-base"></i>
+                                </button>
+                            </div>`;
+                        }
+                    }
+                ],
+                rowData: available,
+                rowHeight: 40,
+                headerHeight: 38
+            });
+            pickerGridApi = el.render();
+        }
+
+        // 6.4 — Update Dashboard KPIs
+        // Computes group statistics and updates the top KPI summary cards.
+        window.updateDashboardKPIs = function () {
+            var total = recordList.length;
+            var totalMembers = 0;
+            $.each(recordList, function (i, r) {
+                totalMembers += (r.members ? r.members.length : 0);
+            });
+
+            var kpis = document.getElementById('kpi-manager');
+            if (kpis && typeof kpis.setCards === 'function') {
+                kpis.setCards([
+                    { id: 'total-groups', label: 'Total Groups', value: total, icon: 'bi-collection-fill', color: 'text-secondary-600' },
+                    { id: 'total-members', label: 'Total Members', value: totalMembers, icon: 'bi-people-fill', color: 'text-blue-600' },
+                    { id: 'active-groups', label: 'Active', value: total, icon: 'bi-check-circle-fill', color: 'text-green-600' }
+                ]);
+            }
+        };
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 7.1 — Bind Events
+        // Attaches event listeners for opening the Add Group and Add Member modals.
+        function bindEvents() {
+            var addBtn = document.getElementById('add-group-btn');
+            var modal = document.getElementById('main-modal');
+
+            if (addBtn && modal) {
+                addBtn.addEventListener('click', function () {
+                    modalMode = 'add';
+                    editingRecord = null;
+                    modalItems = [];
+                    document.getElementById('main-form').reset();
+                    document.getElementById('btn-open-nested').style.display = 'inline-flex';
+
+                    modal.open({
+                        mode: 'add',
+                        title: 'Add New Group',
+                        subtitle: 'Configure group name and members',
+                        onSubmit: function () { saveRecord(); }
+                    });
+
+                    initModalForm('add', {});
+                    refreshItemsGrid();
+                });
+            }
+
+            $(document).on('click', '#btn-open-nested', function () {
+                var nestedModal = document.getElementById('nested-modal');
+                if (!nestedModal) return;
+
+                nestedModal.open({
+                    mode: 'add',
+                    title: 'Add Member',
+                    subtitle: 'Filter by company or designation, then select users to add',
+                    footer: false,
+                    onSubmit: function () { nestedModal.close(); }
+                });
+
+                pickerRows = [];
+                refreshPickerGrid();
+
+                var $pComp = $('#field-picker-company');
+                var $pRole = $('#field-role');
+
+                if (!$pComp.hasClass('select2-hidden-accessible')) {
+                    PremiumSelect2.init($pComp[0], {
+                        placeholder: 'Select Company...',
+                        dropdownParent: PremiumSelect2.dropdownParentFromModal(nestedModal),
+                        allowClear: true,
+                        endpoint: '/api/OtherMasters/api/GetData/Load?MasterType=Company&SubscID=0',
+                        mapItem: function (x) { return { id: x.masterName || x.branchCode || x, text: x.masterName || x.branchName || x }; }
+                    });
+                    $pComp.on('change', function () { loadPickerUsers(); });
+                }
+
+                if (!$pRole.hasClass('select2-hidden-accessible')) {
+                    PremiumSelect2.init($pRole[0], {
+                        placeholder: 'Select Designation...',
+                        dropdownParent: PremiumSelect2.dropdownParentFromModal(nestedModal),
+                        allowClear: true,
+                        endpoint: '/api/OtherMasters/api/GetData/Load?MasterType=Designation&SubscID=0',
+                        mapItem: function (x) { return { id: x.masterName, text: x.masterName }; }
+                    });
+                    $pRole.on('change', function () { loadPickerUsers(); });
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 8 — INIT
+        // ─────────────────────────────────────────────────────────────────
+
+        $(document).ready(function () {
+            renderComponents();
+            bindEvents();
+        });
+    </script>
+</body>
+
+</html>

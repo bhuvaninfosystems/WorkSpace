@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Task Dashboard</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+    <script src="../../Config/cdn/sweetalert2_11.js"></script>
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+    <script src="../../Config/cdn/chart.umd.min.js"></script>
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+    <script src="../../UI_Components/cards/bar-graph-card.js"></script>
+    <script src="../../UI_Components/cards/pie-graph-card.js"></script>
+    <script src="../../UI_Components/cards/doughnut-graph-card.js"></script>
+    <script src="../../UI_Components/modals/components/modal-grid.js"></script>
+    <script src="../../UI_Components/cards/modal-grid-card.js"></script>
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+    <div class="h-full w-full flex relative">
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <div id="top-nav-container"></div>
+
+            <main id="main-canvas" onclick="window.appNav?.closeSubNavOnDesktop()"
+                class="relative flex-1 bg-gray-50/40 overflow-y-auto flex flex-col">
+                <!-- KPI Manager -->
+                <premium-kpi-manager id="kpiManager"></premium-kpi-manager>
+
+                <!-- Date Range Filter Tabs -->
+                <div class="px-3 sm:px-4 pt-2 bg-transparent border-b border-gray-200">
+                    <div class="flex gap-6 overflow-x-auto no-scrollbar" id="date-filter-tabs" role="tablist">
+                        <button type="button" data-date-tab="all"
+                            class="py-2 text-sm font-semibold border-b-2 border-secondary-500 text-secondary-500 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">All
+                            Time</button>
+                        <button type="button" data-date-tab="today"
+                            class="py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Today</button>
+                        <button type="button" data-date-tab="this-week"
+                            class="py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">This
+                            Week</button>
+                        <button type="button" data-date-tab="this-month"
+                            class="py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">This
+                            Month</button>
+                    </div>
+                </div>
+
+                <!-- Dashboard Grid -->
+                <div class="flex-1 p-3 sm:p-4 grid grid-cols-12 gap-3 sm:gap-4 pb-6">
+                    <div class="col-span-12 xl:col-span-9">
+                        <premium-modal-grid-card id="recent-tasks-grid" title="Recent Tasks"
+                            subtitle="Latest by task date (newest first)." grid-height="260">
+                        </premium-modal-grid-card>
+                    </div>
+                    <div class="col-span-12 xl:col-span-3">
+                        <premium-doughnut-graph-card id="chart-assignment-mix" title="Assignment mix"
+                            subtitle="Individual vs group assignments." chart-height="260"
+                            aria-label="Individual vs group assignment chart">
+                        </premium-doughnut-graph-card>
+                    </div>
+
+
+                    <div class="col-span-12 xl:col-span-3">
+                        <premium-pie-graph-card id="chart-task-priority" title="Task Priority"
+                            subtitle="All tasks by priority." chart-height="260" aria-label="Task priority pie chart">
+                        </premium-pie-graph-card>
+                    </div>
+                    <div class="col-span-12 xl:col-span-9">
+                        <premium-bar-graph-card id="chart-task-volume" title="Task volume trend" chart-height="260"
+                            dataset-label="Tasks" aria-label="Task volume bar chart">
+                        </premium-bar-graph-card>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="bottom-nav-container"></div>
+
+    <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ Task Dashboard                                                   ║
+        // ║ Aligned with standard Accounts Dashboard components structure.   ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 1 — CONSTANTS
+        // ─────────────────────────────────────────────────────────────────
+        if (!localStorage.getItem('LogUser')) {
+            window.location.href = '../../index.html';
+        }
+
+        var _session = JSON.parse(localStorage.getItem('LogUser'));
+        if (_session && String(_session.pw || '').trim() === '123456') {
+            window.location.href = './PasswordChange.html';
+        }
+
+        var UserNo = Number(_session.mTransNo);
+        var DomainName = (localStorage.getItem('Domain') || '').trim().replace(/\/+$/, '');
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 2 — STATE
+        // ─────────────────────────────────────────────────────────────────
+        var dashNormalizedTasks = [];
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 3 — DATA
+        // ─────────────────────────────────────────────────────────────────
+        var mockTaskList = [];
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 4 — UI HELPERS
+        // ─────────────────────────────────────────────────────────────────
+        function setDashboardCardsLoading(active, message) {
+            var msg = message || 'Loading…';
+            $.each(['#chart-task-volume', '#chart-task-priority', '#chart-assignment-mix', '#recent-tasks-grid'], function (i, sel) {
+                var card = $(sel).get(0);
+                if (card && typeof card.setLoading === 'function') {
+                    card.setLoading(!!active, msg);
+                }
+            });
+        }
+
+        function formatDateDisplay(ymd) {
+            var s = $.trim(String(ymd || '')).slice(0, 10);
+            if (!s) return '—';
+            var p = s.split('-');
+            if (p.length !== 3) return s;
+            return p[2] + '-' + p[1] + '-' + p[0];
+        }
+
+        var groupCache = null;
+
+        function loadDashboardData() {
+            setDashboardCardsLoading(true, 'Loading dashboard…');
+            var domain = DomainName || '';
+            var subId = _session ? _session.subscID : 0;
+            
+            if (domain && subId) {
+                $.get(domain + '/api/TaskGroup/GetData/' + subId, function(res) {
+                    groupCache = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                    loadTasksFromApi(function () {
+                        dashNormalizedTasks = mockTaskList;
+                        refreshChartsAndGrid(mockTaskList);
+                        setDashboardCardsLoading(false);
+                    });
+                }).fail(function() {
+                    loadTasksFromApi(function () {
+                        dashNormalizedTasks = mockTaskList;
+                        refreshChartsAndGrid(mockTaskList);
+                        setDashboardCardsLoading(false);
+                    });
+                });
+            } else {
+                loadTasksFromApi(function () {
+                    dashNormalizedTasks = mockTaskList;
+                    refreshChartsAndGrid(mockTaskList);
+                    setDashboardCardsLoading(false);
+                });
+            }
+        }
+
+        function loadTasksFromApi(done) {
+            var domain = DomainName || '';
+            if (!domain) {
+                if (done) done();
+                return;
+            }
+
+            $.ajax({
+                url: domain + '/api/Task/TaskDataSender?userNo=' + encodeURIComponent(UserNo),
+                method: 'GET',
+                success: function (json) {
+                    var raw = Array.isArray(json) ? json : (json.data || json.Data || json.result || []);
+                    mockTaskList = raw.map(function (row) {
+                        var dateOnly = function (value) {
+                            if (!value) return '';
+                            var s = String(value);
+                            var t = s.indexOf('T');
+                            return t >= 0 ? s.slice(0, 10) : s.slice(0, 10);
+                        };
+                        var assignToNo = row.assignto != null ? row.assignto
+                            : row.assignTo != null ? row.assignTo
+                                : row.Assignto != null ? row.Assignto
+                                    : row.assignUserNo != null ? row.assignUserNo
+                                        : row.AssignUserNo != null ? row.AssignUserNo
+                                            : row.taskAssignUserNo != null ? row.taskAssignUserNo
+                                                : row.userAssignNo != null ? row.userAssignNo
+                                                    : null;
+                        var groupMetaId = row.groupTransNo != null && row.groupTransNo !== '' ? row.groupTransNo
+                            : row.GroupTransNo != null && row.GroupTransNo !== '' ? row.GroupTransNo
+                                : row.taskGroupId != null && row.taskGroupId !== '' ? row.taskGroupId
+                                    : row.TaskGroupId != null && row.TaskGroupId !== '' ? row.TaskGroupId
+                                        : row.groupMTransNo != null && row.groupMTransNo !== '' ? row.groupMTransNo
+                                            : null;
+
+                        var atype = (row.assignmentType === 'group' || row.AssignmentType === 'group') ? 'group' : 'individual';
+                        var assignTarget = assignToNo != null && assignToNo !== '' ? String(assignToNo) : '';
+                        if (atype === 'group' && groupMetaId != null && groupMetaId !== '') {
+                            assignTarget = String(groupMetaId);
+                        }
+
+                        var assignLabel = row.assignName || row.AssignName || '';
+
+                        var rawAssignType = (row.taskAssignType || row.frequency || 'particular').toString().toLowerCase().trim();
+                        var assignTypeStr = (rawAssignType === 'one-time' || rawAssignType === 'onetime') ? 'particular' : rawAssignType;
+                        var displayAssignType = assignTypeStr === 'particular' ? 'One-time' : (assignTypeStr.charAt(0).toUpperCase() + assignTypeStr.slice(1));
+
+                        return {
+                            id: row.mTransNo || row.id,
+                            mTransNo: row.mTransNo || row.id,
+                            taskName: row.taskName || row.TaskName || '',
+                            dueDate: dateOnly(row.duedate != null ? row.duedate : row.duedate),
+                            assignmentType: atype,
+                            assigneeId: assignTarget,
+                            assignmentLabel: assignLabel,
+                            priority: row.taskPriority || row.TaskPriority || 'Medium',
+                            status: row.status || row.taskStatus || 'Open',
+                            frequency: displayAssignType,
+                            dueTime: row.dueTime || row.DueTime || '',
+                            description: row.taskDescription || row.TaskDescription || '',
+                            taskDate: dateOnly(row.taskDate != null ? row.taskDate : row.TaskDate),
+                            groupMetaId: groupMetaId,
+                            rawTaskAssignType: row.taskAssignType || row.TaskAssignType || ''
+                        };
+                    });
+
+                    mockTaskList = dedupeAndResolveGroupTasks(mockTaskList);
+
+                    if (done) done();
+                },
+                error: function (xhr) {
+                    console.warn('Task list error', xhr);
+                    mockTaskList = [];
+                    if (done) done();
+                }
+            });
+        }
+
+        function dedupeAndResolveGroupTasks(taskList) {
+            var grouped = {};
+            $.each(taskList, function (i, t) {
+                var mNo = String(t.mTransNo);
+                if (!grouped[mNo]) {
+                    grouped[mNo] = [];
+                }
+                grouped[mNo].push(t);
+            });
+
+            var result = [];
+            var frequencies = ['particular', 'one-time', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+
+            $.each(grouped, function (mNo, arr) {
+                var first = arr[0];
+                
+                // If there are multiple assignments or a group ID exists, it's a group task
+                if (arr.length > 1 || (first.groupMetaId != null && first.groupMetaId !== '')) {
+                    first.assignmentType = 'group';
+                    var gName = 'Group Task';
+
+                    if (first.groupMetaId && groupCache) {
+                        var gObj = groupCache.find(function(g) {
+                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                            return String(id) === String(first.groupMetaId);
+                        });
+                        if (gObj) {
+                            gName = gObj.groupName || gObj.name || gName;
+                        }
+                    } else if (first.rawTaskAssignType && frequencies.indexOf(String(first.rawTaskAssignType).toLowerCase().trim()) === -1) {
+                        gName = first.rawTaskAssignType;
+                    }
+
+                    // Try to resolve group by matching member IDs against groupCache if still generic
+                    if (gName === 'Group Task' && groupCache) {
+                        var assigneeIds = arr.map(function (r) { return String(r.assigneeId); }).filter(Boolean).sort().join(',');
+                        var foundGroup = groupCache.find(function (g) {
+                            var team = String(g.groupTeam || '').split(',').map(function (s) { return $.trim(s); }).filter(Boolean).sort().join(',');
+                            return team && team === assigneeIds;
+                        });
+                        if (foundGroup) {
+                            gName = foundGroup.groupName || foundGroup.name || gName;
+                        }
+                    }
+
+                    first.assignmentLabel = gName + (arr.length > 1 ? ' (' + arr.length + ' members)' : '');
+                } else {
+                    // Single assignment but might still have groupMetaId
+                    if (first.groupMetaId && groupCache) {
+                        var gObj = groupCache.find(function(g) {
+                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                            return String(id) === String(first.groupMetaId);
+                        });
+                        if (gObj) {
+                            first.assignmentLabel = gObj.groupName || gObj.name || first.assignmentLabel;
+                            first.assignmentType = 'group';
+                        }
+                    }
+                }
+                result.push(first);
+            });
+            return result;
+        }
+
+        function isTaskCompletedDash(t) {
+            var s = String(t.status || '').trim().toLowerCase().replace(/\s+/g, '');
+            return s === 'complete' || s === 'completed' || s === 'done' || s === 'closed';
+        }
+
+        function todayIsoDate() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function isoDaysAgo(n) {
+            var d = new Date();
+            d.setDate(d.getDate() - n);
+            return d.toISOString().slice(0, 10);
+        }
+
+        function applyKpisFromTasks(tasks) {
+            var kpi = document.getElementById('kpiManager');
+            if (!kpi) return;
+
+            var today = todayIsoDate();
+            var cut = isoDaysAgo(30);
+
+            var openCount = $.grep(tasks, function (t) {
+                return !isTaskCompletedDash(t);
+            }).length;
+
+            var completed30 = $.grep(tasks, function (t) {
+                if (!isTaskCompletedDash(t)) return false;
+                var td = t.taskDate || '';
+                return td && td >= cut;
+            }).length;
+
+            var active = $.grep(tasks, function (t) { return !isTaskCompletedDash(t); });
+            var withDue = $.grep(active, function (t) { return !!t.dueDate; });
+            var onTime = $.grep(withDue, function (t) { return t.dueDate >= today; }).length;
+            var slaText = withDue.length ? (Math.round(100 * onTime / withDue.length) + '%') : '—';
+
+            var atRisk = $.grep(active, function (t) {
+                return t.dueDate && t.dueDate < today;
+            }).length;
+
+            kpi.setCards([
+                { id: 'open', label: 'Open tasks', value: String(openCount), icon: 'bi-list-task' },
+                { id: 'done', label: 'Completed (30d)', value: String(completed30), icon: 'bi-check2-circle' },
+                { id: 'sla', label: 'Active · due on track', value: String(slaText), icon: 'bi-graph-up-arrow' },
+                { id: 'risk', label: 'Overdue (active)', value: String(atRisk), icon: 'bi-exclamation-triangle' }
+            ]);
+        }
+
+        function buildLast7DaysVolume(tasks) {
+            var labels = [];
+            var keys = [];
+            var countsMap = {};
+
+            $.each(tasks, function (i, t) {
+                var k = t.taskDate;
+                if (!k) return;
+                countsMap[k] = (countsMap[k] || 0) + 1;
+            });
+
+            var i;
+            for (i = 6; i >= 0; i--) {
+                var d = new Date();
+                d.setDate(d.getDate() - i);
+                var key = d.toISOString().slice(0, 10);
+                keys.push(key);
+                labels.push(formatDateDisplay(key));
+            }
+
+            var data = [];
+            $.each(keys, function (idx, k) {
+                data.push(countsMap[k] || 0);
+            });
+            return { labels: labels, data: data };
+        }
+
+        function buildPrioritySlices(tasks) {
+            var h = 0, m = 0, l = 0;
+            $.each(tasks, function (i, t) {
+                if (t.priority === 'High') h++;
+                else if (t.priority === 'Low') l++;
+                else m++;
+            });
+            return [h, m, l];
+        }
+
+        function buildAssignmentSlices(tasks) {
+            var g = 0, ind = 0;
+            $.each(tasks, function (i, t) {
+                if (t.assignmentType === 'group') g++;
+                else ind++;
+            });
+            return [ind, g];
+        }
+
+        function tasksToRecentGridRows(tasks) {
+            var sorted = tasks.slice();
+            sorted.sort(function (a, b) {
+                return String(b.taskDate || '').localeCompare(String(a.taskDate || ''));
+            });
+            var out = [];
+            var limit = sorted.length < 24 ? sorted.length : 24;
+            var idx;
+            for (idx = 0; idx < limit; idx++) {
+                var t = sorted[idx];
+                out.push({
+                    task: t.taskName || '',
+                    owner: $.trim(t.assignmentLabel || '') || '—',
+                    priority: t.priority || '—',
+                    status: t.status || '—',
+                    assignType: t.assignmentType === 'group' ? 'Group' : 'Individual',
+                    dueDate: t.dueDate ? t.dueDate : '',
+                    frequency: t.frequency || 'One-time',
+                    updatedOn: t.taskDate ? formatDateDisplay(t.taskDate) : '—'
+                });
+            }
+            return out;
+        }
+
+        function refreshChartsAndGrid(tasks) {
+            var vol = buildLast7DaysVolume(tasks);
+            updateVolumeChart(vol.labels, vol.data);
+            updatePriorityChart(buildPrioritySlices(tasks));
+            updateAssignmentChart(buildAssignmentSlices(tasks));
+            applyKpisFromTasks(tasks);
+            setRecentGridRows(tasksToRecentGridRows(tasks));
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 6 — COMPONENTS
+        // ─────────────────────────────────────────────────────────────────
+        function initKPIs() {
+            var kpi = document.getElementById('kpiManager');
+            if (!kpi) return;
+            kpi.setCards([
+                { id: 'open', label: 'Open tasks', value: '—', icon: 'bi-list-task' },
+                { id: 'done', label: 'Completed (30d)', value: '—', icon: 'bi-check2-circle' },
+                { id: 'sla', label: 'Active · due on track', value: '—', icon: 'bi-graph-up-arrow' },
+                { id: 'risk', label: 'Overdue (active)', value: '—', icon: 'bi-exclamation-triangle' }
+            ]);
+        }
+
+        function updateVolumeChart(labels, series) {
+            var card = $('#chart-task-volume').get(0);
+            if (!card || typeof card.updateData !== 'function') return;
+            card.updateData(labels, series);
+        }
+
+        function updatePriorityChart(slices) {
+            var card = $('#chart-task-priority').get(0);
+            if (!card || typeof card.updateData !== 'function') return;
+            card.updateData(['High', 'Medium', 'Low'], slices);
+        }
+
+        function updateAssignmentChart(slices) {
+            var card = $('#chart-assignment-mix').get(0);
+            if (!card || typeof card.updateData !== 'function') return;
+            card.updateData(['Individual', 'Group'], slices);
+        }
+
+        function initRecentTasksGrid() {
+            var grid = $('#recent-tasks-grid').get(0);
+            if (!grid || typeof grid.setOptions !== 'function') return;
+            grid.setOptions({
+                columns: [
+                    { field: 'task', headerName: 'Task Name', flex: 2, minWidth: 200, filter: true },
+                    { field: 'owner', headerName: 'Assignee / Group', flex: 1.5, minWidth: 150, filter: true },
+                    { 
+                        field: 'priority', headerName: 'Priority', flex: 1, minWidth: 100, filter: true,
+                        cellRenderer: function(params) {
+                            var val = params.value || '';
+                            if (val === 'High') return '<span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">' + val + '</span>';
+                            if (val === 'Medium') return '<span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">' + val + '</span>';
+                            return '<span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">' + val + '</span>';
+                        }
+                    },
+                    { 
+                        field: 'status', headerName: 'Status', flex: 1, minWidth: 120, filter: true,
+                        cellRenderer: function(params) {
+                            var val = params.value || '';
+                            var lowerVal = val.toLowerCase();
+                            if (lowerVal === 'completed' || lowerVal === 'complete') return '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">' + val + '</span>';
+                            if (lowerVal === 'in progress') return '<span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">' + val + '</span>';
+                            if (lowerVal === 'pending') return '<span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">' + val + '</span>';
+                            return '<span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">' + val + '</span>';
+                        }
+                    },
+                    { field: 'dueDate', headerName: 'Due Date', flex: 1, minWidth: 120, filter: true, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
+                    { 
+                        field: 'frequency', headerName: 'Frequency', flex: 1, minWidth: 120, filter: true,
+                        cellRenderer: function(params) {
+                            var val = params.value || '';
+                            var lowerVal = val.toLowerCase();
+                            var bg = 'bg-gray-100', text = 'text-gray-700';
+                            if (lowerVal === 'daily') { bg = 'bg-blue-100'; text = 'text-blue-700'; }
+                            else if (lowerVal === 'weekly') { bg = 'bg-indigo-100'; text = 'text-indigo-700'; }
+                            else if (lowerVal === 'monthly') { bg = 'bg-purple-100'; text = 'text-purple-700'; }
+                            else if (lowerVal === 'quarterly') { bg = 'bg-pink-100'; text = 'text-pink-700'; }
+                            else if (lowerVal === 'yearly') { bg = 'bg-orange-100'; text = 'text-orange-700'; }
+                            else if (lowerVal === 'one-time' || lowerVal === 'particular') { bg = 'bg-teal-100'; text = 'text-teal-700'; }
+                            return '<span class="px-2 py-1 text-xs font-medium rounded-full ' + bg + ' ' + text + '">' + val + '</span>';
+                        }
+                    }
+                ],
+                rowData: [],
+                rowHeight: 42,
+                headerHeight: 42
+            });
+            if (typeof grid.render === 'function') grid.render();
+        }
+
+        function setRecentGridRows(rows) {
+            var grid = $('#recent-tasks-grid').get(0);
+            if (!grid) return;
+            if (typeof grid.setRowData === 'function') {
+                grid.setRowData(rows);
+                return;
+            }
+            var api = grid.getApi && grid.getApi();
+            if (api && typeof api.setGridOption === 'function') {
+                api.setGridOption('rowData', rows);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+        function bindDateFilterEvents() {
+            $('#date-filter-tabs').on('click', 'button', function () {
+                var $btn = $(this);
+                var filter = $btn.attr('data-date-tab');
+
+                // Update tab styles
+                $('#date-filter-tabs button').removeClass('border-secondary-500 text-secondary-500').addClass('border-transparent text-gray-500');
+                $btn.removeClass('border-transparent text-gray-500').addClass('border-secondary-500 text-secondary-500');
+
+                filterDashboardByDate(filter);
+            });
+        }
+
+        function filterDashboardByDate(filter) {
+            var today = todayIsoDate();
+            var filtered = dashNormalizedTasks;
+
+            if (filter === 'today') {
+                filtered = $.grep(dashNormalizedTasks, function (t) { return t.taskDate === today; });
+            } else if (filter === 'this-week') {
+                var cut = isoDaysAgo(7);
+                filtered = $.grep(dashNormalizedTasks, function (t) { return t.taskDate >= cut; });
+            } else if (filter === 'this-month') {
+                var currentMonth = today.slice(0, 7);
+                filtered = $.grep(dashNormalizedTasks, function (t) { return String(t.taskDate).startsWith(currentMonth); });
+            }
+
+            refreshChartsAndGrid(filtered);
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 8 — INIT
+        // ─────────────────────────────────────────────────────────────────
+        $(function () {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+            initKPIs();
+            initRecentTasksGrid();
+            bindDateFilterEvents();
+            loadDashboardData();
+        });
+    </script>
+</body>
+
+</html>

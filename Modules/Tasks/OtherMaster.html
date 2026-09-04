@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Other Master</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+
+    <link href="../../Config/cdn/select2.min.css" rel="stylesheet" />
+    <script src="../../Config/cdn/select2.full.min.js"></script>
+    <script src="../../Config/cdn/sweetalert2_11.js"></script>
+
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+    <script src="../../UI_Components/modals/components/input-field.js"></script>
+    <script src="../../UI_Components/modals/components/select2-field.js"></script>
+    <script src="../../UI_Components/modals/popup-modal.js"></script>
+    <script src="../../UI_Components/layout/data-grid.js"></script>
+    <script src="../../UI_Components/modals/components/modal-grid.js"></script>
+
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <div class="h-full w-full flex relative">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- Top Header Navbar -->
+            <div id="top-nav-container"></div>
+
+            <!-- Main Canvas View -->
+            <main id="main-canvas" onclick="window.appNav && window.appNav.closeSubNavOnDesktop()"
+                class="relative flex-1 bg-[#f9fafb] overflow-hidden flex flex-col">
+
+                <!-- KPI Dashboard Widgets Section -->
+                <premium-kpi-manager id="kpi-manager" data-columns="4"></premium-kpi-manager>
+
+                <!-- Table View Listing -->
+                <div id="table-view" class="flex-1 min-h-0 flex flex-col">
+                    <!-- Add Record Button (will be moved into the grid toolbar actions slot) -->
+                    <premium-button id="add-record-btn" icon="bi-plus-circle" label="Add Record" variant="solid"
+                        class="hidden" bg-color="bg-white" border-color="border-gray-300"
+                        text-color="text-black"></premium-button>
+                    <premium-grid id="page-grid" class="w-full flex-1 min-h-0" data-show-sino="true"
+                        data-show-actions="true" data-row-id-field="id" data-pagination="true"
+                        data-pagination-page-size="15" data-pagination-page-size-selector="[5, 10, 15, 20, 50]"
+                        data-floating-filter="false" data-row-height="40" data-auto-fill-height="true"
+                        data-min-height="200" data-suppress-size-to-fit="false" data-action-view="viewRecord"
+                        data-action-edit="editRecord" data-action-delete="deleteRecord"></premium-grid>
+                </div>
+
+                <!-- Main Record Popup Modal -->
+                <premium-popup-modal id="main-modal" data-width="600px" data-max-width="95%" data-height="auto">
+                    <template data-modal-body>
+                        <form id="main-form" class="space-y-4" onsubmit="return false;">
+                            <input type="hidden" id="record-id" value="0">
+
+                            <div class="grid md:grid-cols-2 grid-cols-1 gap-2">
+                                <!-- Master Type -->
+                                <div class="space-y-1">
+                                    <label data-premium-label>Master Type *</label>
+                                    <select id="field-master-type" class="w-full" data-premium-input></select>
+                                </div>
+
+                                <!-- Master Name -->
+                                <div class="space-y-1">
+                                    <label data-premium-label>Master Name *</label>
+                                    <input type="text" id="field-master-name" data-premium-input
+                                        placeholder="Enter master name" required>
+                                </div>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="space-y-1">
+                                <label data-premium-label>Status *</label>
+                                <select id="field-status" class="w-full" data-premium-input>
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </form>
+                    </template>
+                </premium-popup-modal>
+
+                <!-- Nested Master Type Popup Modal Removed -->
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div id="bottom-nav-container"></div>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ Other Master                                                     ║
+        // ║ Type-1 module using AccountMaster-style structure.               ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        //  SECTIONS:  1-CONSTANTS  2-STATE  3-DATA  4-UI HELPERS
+        //             5-FEATURE LOGIC  6-COMPONENTS  7-EVENTS  8-INIT
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 1 — CONSTANTS
+        // ─────────────────────────────────────────────────────────────────
+        if (!localStorage.getItem('LogUser')) { window.location.href = '../../index.html'; }
+        const DomainName = localStorage.getItem('Domain') || '';
+        const UserNo = Number(JSON.parse(localStorage.getItem('LogUser')).mTransNo);
+        const mSubscID = JSON.parse(localStorage.getItem('LogUser')).subscID || 1020;
+        const mUserType = JSON.parse(localStorage.getItem('LogUser')).userType;
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 2 — STATE
+        // ─────────────────────────────────────────────────────────────────
+        var pageGridApi = null;
+        var recordList = [];
+        var modalMode = 'add';
+        var editingRecord = null;
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 3 — DATA
+        // ─────────────────────────────────────────────────────────────────
+        // (No manual lookups; data is fetched by grid or Select2 endpoints)
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 4 — UI HELPERS
+        // ─────────────────────────────────────────────────────────────────
+        // (No UI helpers needed for this module)
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 5 — FEATURE LOGIC
+        // ─────────────────────────────────────────────────────────────────
+
+        // 5.1 — Load Other Master Into Grid
+        // Fetches all other master records from the API and populates the main data grid.
+        function loadOtherMasterIntoGrid() {
+            var grid = document.getElementById('page-grid');
+            if (grid && typeof grid.setLoading === 'function') grid.setLoading(true, 'Loading records...');
+
+            $.ajax({
+                type: 'GET',
+                url: DomainName + '/api/OtherMasters/api/GetData/list?SubscID=' + mSubscID,
+                dataType: 'json',
+                success: function (result) {
+                    var data = Array.isArray(result) ? result : (result && result.data ? result.data : []);
+                    $.each(data, function (i, r) {
+                        r.id = String(r.mTransNo);
+                        r.status = (r.status === 'Y' || r.lockStatus === 'Y') ? 'Active' : 'Inactive';
+                    });
+                    recordList = data;
+                    if (grid && typeof grid.setRowData === 'function') grid.setRowData(recordList);
+                    window.updateDashboardKPIs();
+                },
+                error: function (xhr) {
+                    console.error('Failed to load other master', xhr);
+                    Swal.fire({ title: 'Error', text: 'Failed to load Other Master data.', icon: 'error', timer: 2000, showConfirmButton: false, heightAuto: false });
+                },
+                complete: function () {
+                    if (grid && typeof grid.setLoading === 'function') grid.setLoading(false);
+                }
+            });
+        }
+
+        // 5.2 — Save Record
+        // Gathers form data, validates, and sends an Insert or Update payload to the API.
+        function saveRecord() {
+            var modal = document.getElementById('main-modal');
+            var type = $.trim($('#field-master-type').val() || '');
+            var name = $.trim(document.getElementById('field-master-name').value);
+            var status = $.trim($('#field-status').val() || '');
+
+            if (!type || !name || !status) {
+                Swal.fire({ title: 'Validation Error', text: 'Please fill in all required fields.', icon: 'warning', heightAuto: false });
+                return;
+            }
+
+            var isEdit = (modalMode === 'edit' && editingRecord);
+            var mTransNo = isEdit ? Number(editingRecord.id) : 0;
+
+            var payload = {
+                mTransNo: mTransNo,
+                mCount: 0,
+                masterType: type,
+                masterName: name,
+                department: '',
+                systemIP: "1",
+                lockStatus: status === 'Active' ? 'Y' : 'N',
+                createdBy: UserNo,
+                createdOn: new Date().toISOString(),
+                subscID: mSubscID,
+                status: mTransNo > 0 ? 'Update' : 'Insert'
+            };
+
+            if (modal && typeof modal.setLoading === 'function') modal.setLoading(true, "Submitting record. Please wait...");
+
+            $.ajax({
+                url: DomainName + '/api/OtherMasters/api/SaveData',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (result) {
+                    var arr = typeof result === 'string' ? result.split("^") : [];
+                    if ((arr.length > 1 && arr[1] > 0) || (result && result.id > 0)) {
+                        Swal.fire({ title: 'Saved!', text: isEdit ? 'Record updated successfully.' : 'Record created successfully.', icon: 'success', confirmButtonColor: '#10b981', heightAuto: false });
+                        modal.close();
+                        loadOtherMasterIntoGrid();
+                    } else {
+                        Swal.fire({ title: 'Error', text: typeof result === 'string' ? result : 'Error saving record', icon: 'error', heightAuto: false });
+                    }
+                },
+                error: function (xhr) {
+                    var errorMessage = xhr.responseText || 'Unknown error occurred';
+                    Swal.fire({ title: 'Alerts', text: 'Error saving Master Types:\n' + errorMessage, icon: 'error', heightAuto: false });
+                },
+                complete: function () {
+                    if (modal && typeof modal.setLoading === 'function') modal.setLoading(false);
+                }
+            });
+        }
+
+        // 5.3 — View Record
+        // Opens the main modal in read-only mode to display record details.
+        window.viewRecord = function (rowId, rowData) {
+            modalMode = 'view';
+            editingRecord = rowData;
+
+            var modal = document.getElementById('main-modal');
+            modal.open({
+                mode: 'view',
+                title: 'View Record Details',
+                subtitle: 'Reviewing: ' + rowData.masterName,
+                freezeInputs: true,
+                freezeMode: 'readonly'
+            });
+            initModalForm('view', rowData);
+        };
+
+        // 5.4 — Edit Record
+        // Opens the main modal in edit mode and populates it with the selected record's data.
+        window.editRecord = function (rowId, rowData) {
+            modalMode = 'edit';
+            editingRecord = rowData;
+
+            var modal = document.getElementById('main-modal');
+            modal.open({
+                mode: 'edit',
+                title: 'Edit Record',
+                subtitle: 'Modify record configuration',
+                onSubmit: function () { saveRecord(); }
+            });
+            initModalForm('edit', rowData);
+        };
+
+        // 5.5 — Delete Record
+        // Prompts for a reason and handles the deletion of a record.
+        window.deleteRecord = function (rowId, rowData) {
+            console.log(rowData.id)
+            Swal.fire({
+                title: 'Delete record "' + rowData.masterName + '"?',
+                text: "Describe why this record is being removed (required):",
+                icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Reason for deletion...',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                confirmButtonText: 'Yes, delete it!',
+                heightAuto: false,
+                inputValidator: function (value) {
+                    if (!value || !$.trim(String(value))) return 'Please enter a reason for deletion.';
+                    return null;
+                }
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    deleteRecordWithReason(rowData.id, result.value);
+                }
+            });
+        };
+
+        // 5.6 — Delete Record With Reason
+        // API call to delete a record after the reason is provided.
+        function deleteRecordWithReason(id, reason) {
+            $.ajax({
+                url: DomainName + '/api/OtherMasters/api/DeleteData/' + encodeURIComponent(id) + '?userNo=' + encodeURIComponent(UserNo) + '&reason=' + encodeURIComponent(reason),
+                type: 'DELETE',
+                dataType: "text",
+                contentType: 'application/json',
+                success: function (result) {
+                    Swal.fire({ title: 'Deleted!', text: 'Record deleted successfully.', icon: 'success', confirmButtonColor: '#10b981', heightAuto: false });
+                    loadOtherMasterIntoGrid();
+                },
+                error: function (xhr) {
+                    var errorMessage = xhr.responseText || "Unknown error occurred";
+                    Swal.fire({ title: "Alerts", text: "Error deleting record:\n" + errorMessage, icon: "error", heightAuto: false });
+                }
+            });
+        }
+
+        // 5.7 — Init Modal Form
+        // Initializes Select2 components for Master Type and Status, and sets values.
+        function initModalForm(mode, data) {
+            data = data || {};
+            var modal = document.getElementById('main-modal');
+            var body = modal.getBodyElement();
+            if (!body) return;
+
+            var statusEl = $(body).find('#field-status');
+            if (!statusEl.hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(statusEl[0], { width: '100%', dropdownParent: PremiumSelect2.dropdownParentFromModal(modal) });
+            }
+
+            var typeEl = $(body).find('#field-master-type');
+            if (!typeEl.hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(typeEl[0], {
+                    width: '100%',
+                    placeholder: 'Select Master Type...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    endpoint: '/api/OtherMasters/api/GetMasterType',
+                    mapItem: function (x) {
+                        return { id: x.masterType, text: x.masterType };
+                    }
+                });
+            }
+
+            var typeVal = data.masterType || '';
+            if (typeVal && typeEl.find('option[value="' + typeVal + '"]').length === 0) {
+                typeEl.append('<option value="' + typeVal + '">' + typeVal + '</option>');
+            }
+            typeEl.val(typeVal).trigger('change');
+
+            $(body).find('#field-master-name').val(data.masterName || '');
+
+            var statusStr = (data.lockStatus === 'Y' || data.status === 'Active') ? 'Active' : 'Inactive';
+            statusEl.val(statusStr).trigger('change');
+
+            if (mode === 'view') {
+                $(body).find('input, select').prop('disabled', true);
+                $(body).find('.select2-container').css('pointer-events', 'none');
+            } else {
+                $(body).find('input, select').prop('disabled', false);
+                $(body).find('.select2-container').css('pointer-events', 'auto');
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 6 — COMPONENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 6.1 — Render Components
+        // Initializes the main navigation shell and premium data grid.
+        function renderComponents() {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+
+            var grid = document.getElementById('page-grid');
+            if (grid) {
+                grid.setOptions({
+                    columns: [
+                        { field: 'masterType', headerName: 'Master Type', flex: 1, minWidth: 150, filter: true },
+                        { field: 'masterName', headerName: 'Master Name', flex: 1.5, minWidth: 200, filter: true },
+                        {
+                            field: 'status',
+                            headerName: 'Status',
+                            width: 120,
+                            filter: true,
+                            cellRenderer: function (params) {
+                                var val = params.value || 'Active';
+                                var bg = val === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+                                return '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ' + bg + '">' + val + '</span>';
+                            }
+                        }
+                    ],
+                    rowData: []
+                });
+                grid.render();
+
+                var addBtn = document.getElementById('add-record-btn');
+                if (addBtn && typeof grid.getActionsSlot === 'function') {
+                    addBtn.classList.remove('hidden');
+                    grid.getActionsSlot().appendChild(addBtn);
+                }
+            }
+
+            loadOtherMasterIntoGrid();
+        }
+
+        // 6.2 — Update Dashboard KPIs
+        // Computes record summaries and updates the top KPI cards.
+        window.updateDashboardKPIs = function () {
+            var total = recordList.length;
+            var active = 0;
+            var uniqueTypes = {};
+
+            $.each(recordList, function (i, r) {
+                if (r.status === 'Active') active++;
+                if (r.masterType) uniqueTypes[r.masterType] = true;
+            });
+            var typesCount = Object.keys(uniqueTypes).length;
+
+            var kpis = document.getElementById('kpi-manager');
+            if (kpis && typeof kpis.setCards === 'function') {
+                kpis.setCards([
+                    { id: 'total-records', label: 'Total Records', value: total, icon: 'bi-collection-fill', color: 'text-secondary-600' },
+                    { id: 'active-records', label: 'Active Records', value: active, icon: 'bi-check-circle-fill', color: 'text-green-600' },
+                    { id: 'master-types', label: 'Master Types', value: typesCount, icon: 'bi-tags-fill', color: 'text-blue-600' }
+                ]);
+            }
+        };
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 7.1 — Bind Events
+        // Attaches event listeners for the "Add Record" button.
+        function bindEvents() {
+            var addBtn = document.getElementById('add-record-btn');
+            var mainModal = document.getElementById('main-modal');
+
+            if (addBtn && mainModal) {
+                addBtn.addEventListener('click', function () {
+                    modalMode = 'add';
+                    editingRecord = null;
+                    document.getElementById('main-form').reset();
+                    document.getElementById('record-id').value = '0';
+
+                    mainModal.open({
+                        mode: 'add',
+                        title: 'Add Record',
+                        subtitle: 'Create a new other master record',
+                        onSubmit: function () { saveRecord(); }
+                    });
+
+                    initModalForm('add', {});
+                });
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 8 — INIT & SEEDING
+        // ─────────────────────────────────────────────────────────────────
+
+        $(document).ready(function () {
+            renderComponents();
+            bindEvents();
+        });
+    </script>
+</body>
+
+</html>

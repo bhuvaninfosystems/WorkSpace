@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>User Master</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Tailwind CSS (Using local CDN path as per project standard) -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+
+    <!-- Bootstrap Icons (Required by navigation for icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <!-- GSAP for animations (Required by navigation.js) -->
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+
+    <!-- jQuery -->
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Navigation Component Script -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+
+    <!-- KPI Manager Script -->
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+
+    <!-- AG Grid -->
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+
+    <!-- Select2 -->
+    <link href="../../Config/cdn/select2.min.css" rel="stylesheet" />
+    <script src="../../Config/cdn/select2.full.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="../../Config/cdn/sweetalert2_11.js"></script>
+
+    <!-- UI Button Component -->
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+
+    <!-- Premium Input Styles -->
+    <script src="../../UI_Components/modals/components/input-field.js"></script>
+
+    <!-- Premium Select2 Component -->
+    <script src="../../UI_Components/modals/components/select2-field.js"></script>
+
+    <!-- Popup Modal Component -->
+    <script src="../../UI_Components/modals/popup-modal.js"></script>
+
+    <!-- Data Grid Component -->
+    <script src="../../UI_Components/layout/data-grid.js"></script>
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SHELL (Standard layout containers for navigation) -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <div class="h-full w-full flex relative">
+        <!-- 1. Sidebar Container: Hosts the vertical navigation menu on desktop screens -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- 2. Top Navigation Container: Hosts the top header bar with user profile, breadcrumbs, etc. -->
+            <div id="top-nav-container"></div>
+
+            <!-- 3. Main Content Canvas: The primary scrollable area for page content -->
+            <main id="main-canvas" class="relative flex-1 bg-gray-50/40 overflow-y-auto flex flex-col">
+                <!-- 4. KPI Manager: Custom component displaying key performance indicators at the top -->
+                <premium-kpi-manager id="kpiManager"></premium-kpi-manager>
+
+                <!-- 5. Premium Grid: Custom data grid component for listing users -->
+                <premium-grid id="page-grid" class="w-full flex-1 min-h-0 mb-4 sm:mb-0" data-show-sino="true"
+                    data-show-actions="true" data-row-id-field="id" data-pagination="true"
+                    data-pagination-page-size="15" data-pagination-page-size-selector="[5, 10, 15, 20, 50]"
+                    data-floating-filter="false" data-row-height="40" data-auto-fill-height="true" data-min-height="200"
+                    data-suppress-size-to-fit="false" data-action-view="viewRecord" data-action-edit="editRecord"
+                    data-action-delete="deleteRecord">
+                    <!-- Declare our custom UI Button right here in the HTML! -->
+                    <div slot="actions" class="flex items-center gap-3">
+
+                        <premium-button id="add-user-btn" icon="bi-plus-circle" label="Add User" variant="solid"
+                            bg-color="bg-white" border-color="border-gray-300" text-color="text-black"></premium-button>
+                    </div>
+                </premium-grid>
+
+                <!-- 6. Popup Modal: Custom popup modal component for adding/editing a user -->
+                <premium-popup-modal id="main-modal" data-width="720px" data-max-width="95%" data-height="500px">
+                    <template data-modal-body>
+                        <form id="main-form" class="space-y-4" onsubmit="return false;">
+                            <input type="hidden" id="record-id" value="0">
+
+                            <!-- Company -->
+                            <div class="space-y-1">
+                                <label data-premium-label>Company *</label>
+                                <select id="field-company" class="w-full" data-premium-input required></select>
+                            </div>
+
+                            <!-- User Name and User Id -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label data-premium-label>User Name *</label>
+                                    <input type="text" id="field-name" data-premium-input placeholder="Enter user name"
+                                        required>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>User Id *</label>
+                                    <input type="text" id="field-userid" data-premium-input placeholder="Enter user ID"
+                                        required>
+                                </div>
+                            </div>
+
+                            <!-- Role and Email -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label data-premium-label>Role *</label>
+                                    <select id="field-role" class="w-full" data-premium-input required></select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>Email Address</label>
+                                    <input type="email" id="field-email" data-premium-input
+                                        placeholder="user@example.com">
+                                </div>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="space-y-1">
+                                <label data-premium-label>Status *</label>
+                                <select id="field-status" class="w-full" data-premium-input required>
+                                    <option value="Active" selected>Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </form>
+                    </template>
+                </premium-popup-modal>
+
+
+            </main>
+        </div>
+    </div>
+
+    <!-- 8. Mobile Bottom Navigation: Replaces sidebar on small mobile screens -->
+    <div id="bottom-nav-container"></div>
+
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ Component Test Init                                              ║
+        // ║ Bootstraps layout and widgets using jQuery.                      ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        //
+        //  SECTIONS:  1-CONSTANTS  2-STATE  3-DATA  4-UI HELPERS
+        //             5-FEATURE LOGIC  6-COMPONENTS  7-EVENTS  8-INIT
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 1 — CONSTANTS
+        // ─────────────────────────────────────────────────────────────────
+        if (!localStorage.getItem('LogUser')) { window.location.href = '../../index.html'; }
+        const DomainName = localStorage.getItem('Domain') || '';
+        const UserNo = Number(JSON.parse(localStorage.getItem('LogUser')).mTransNo);
+        const mSubscID = JSON.parse(localStorage.getItem('LogUser')).subscID;
+        const mUserType = JSON.parse(localStorage.getItem('LogUser')).userType;
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 2 — STATE
+        // ─────────────────────────────────────────────────────────────────
+        var pageGridApi = null;
+        var recordList = [];
+        var modalMode = 'add';
+        var editingRecord = null;
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 3 — DATA
+        // ─────────────────────────────────────────────────────────────────
+        // (No data fetch helpers needed; lookups are handled by Select2 endpoints)
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 4 — UI HELPERS
+        // ─────────────────────────────────────────────────────────────────
+        // (No UI helpers needed for this module)
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 5 — FEATURE LOGIC
+        // ─────────────────────────────────────────────────────────────────
+
+        // 5.1 — Load User Master Into Grid
+        // Fetches all users from the API and populates the main data grid.
+        function loadUserMasterIntoGrid() {
+            var grid = document.getElementById('page-grid');
+            if (grid && typeof grid.setLoading === 'function') grid.setLoading(true, 'Loading users...');
+
+            $.ajax({
+                type: 'GET',
+                url: DomainName + "/api/UserMaster/api/GetData/list",
+                data: { SubscID: mSubscID || 1 },
+                success: function (result) {
+                    var data = Array.isArray(result) ? result : (result && result.data ? result.data : []);
+                    $.each(data, function (i, r) {
+                        r.id = String(r.mTransNo);
+                        r.status = (r.lockStatus === 'Y') ? 'Active' : (r.lockStatus === 'N' ? 'Inactive' : 'Blocked');
+                    });
+                    recordList = data;
+                    if (grid && typeof grid.setRowData === 'function') grid.setRowData(recordList);
+                    window.updateDashboardKPIs();
+                },
+                error: function (xhr) {
+                    console.error('Failed to load users', xhr);
+                    Swal.fire({ title: "Error", text: "Failed to load user list data.", icon: "error", heightAuto: false });
+                },
+                complete: function () {
+                    if (grid && typeof grid.setLoading === 'function') grid.setLoading(false);
+                }
+            });
+        }
+
+        // 5.2 — Save Record
+        // Gathers form data, validates, and sends an Insert or Update payload to the API.
+        function saveRecord() {
+            var modal = document.getElementById('main-modal');
+            var body = modal.getBodyElement();
+            if (!body) return;
+
+            var userName = $.trim($(body).find('#field-name').val());
+            var userId = $.trim($(body).find('#field-userid').val());
+            var role = $(body).find('#field-role').val();
+            var company = $(body).find('#field-company').val();
+            var emailId = $.trim($(body).find('#field-email').val());
+            var lockStatus = $(body).find('#field-status').val() === 'Active' ? 'Y' : 'N';
+            var mTransNo = Number($(body).find('#record-id').val()) || 0;
+
+            if (!userName || !userId || !role || !company) {
+                Swal.fire({ title: 'Validation Error', text: 'Please fill User Name, User ID, Role, and Company fields.', icon: 'error', heightAuto: false });
+                return;
+            }
+
+            var payload = {
+                mTransNo: mTransNo,
+                mCount: 0,
+                userName: userName,
+                userId: userId,
+                pw: mTransNo > 0 ? "" : "123456", // Send empty string for updates (API requires non-null); default password for new users
+                userType: "USER",
+                designation: role,
+                contactNo: "",
+                emailId: emailId,
+                imageFile: "",
+                templateName: "",
+                branch: company,
+                linkNo: 0,
+                pwExpiry: 0,
+                badLogins: 0,
+                tokenNo: 0,
+                lastLogin: null,
+                logoutDate: null,
+                homePage: "",
+                systemIP: "1",
+                lockStatus: lockStatus,
+                createdBy: UserNo,
+                createdOn: new Date().toISOString(),
+                subscID: mSubscID || 1,
+                oprCompany: company,
+                OprCompany: company,
+                oprSubscID: 1,
+                status: mTransNo > 0 ? "Update" : "Insert"
+            };
+
+            if (modal && typeof modal.setLoading === 'function') modal.setLoading(true, "Submitting record. Please wait...");
+
+            $.ajax({
+                url: DomainName + "/api/UserMaster/api/SaveData",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload),
+                success: function (result) {
+                    var arr = result ? String(result).split("^") : [];
+                    if (arr.length > 1 && arr[1] > 0) {
+                        Swal.fire({ title: 'Saved!', text: 'Record saved successfully.', icon: 'success', confirmButtonColor: '#10b981', heightAuto: false });
+                        modal.close();
+                        loadUserMasterIntoGrid();
+                    } else {
+                        Swal.fire({ title: "Error", text: result, icon: "error", heightAuto: false });
+                    }
+                },
+                error: function (xhr) {
+                    var errorMessage = xhr.responseText || "Unknown error occurred";
+                    Swal.fire({ title: "Alert", text: "Error saving User Master:\n" + errorMessage, icon: "error", heightAuto: false });
+                },
+                complete: function () {
+                    if (modal && typeof modal.setLoading === 'function') modal.setLoading(false);
+                }
+            });
+        }
+
+        // 5.3 — View Record
+        // Opens the main modal in read-only mode to display user details.
+        window.viewRecord = function (rowId, rowData) {
+            modalMode = 'view';
+            editingRecord = rowData;
+
+            var modal = document.getElementById('main-modal');
+            modal.open({
+                mode: 'view',
+                title: 'View User Details',
+                subtitle: 'Reviewing: ' + rowData.userName,
+                freezeInputs: true,
+                freezeMode: 'readonly'
+            });
+            initModalForm('view', rowData);
+        };
+
+        // 5.4 — Edit Record
+        // Opens the main modal in edit mode and populates it with the selected user's data.
+        window.editRecord = function (rowId, rowData) {
+            modalMode = 'edit';
+            editingRecord = rowData;
+
+            var modal = document.getElementById('main-modal');
+            modal.open({
+                mode: 'edit',
+                title: 'Edit User',
+                subtitle: 'Modify user details',
+                onSubmit: function () { saveRecord(); }
+            });
+            initModalForm('edit', rowData);
+        };
+
+        // 5.5 — Delete Record
+        // Handles the deletion of a user. Currently restricted.
+        window.deleteRecord = function (rowId, rowData) {
+            Swal.fire({ title: 'Info', text: 'Deletion Restricted.', icon: 'info', timer: 2000, showConfirmButton: false, heightAuto: false });
+        };
+
+        // 5.6 — Reset Password
+        // Resets the user's password to a default value via a confirmation dialog.
+        window.resetPassword = function (id) {
+            Swal.fire({
+                title: 'Reset Password',
+                text: 'Are you sure you want to reset the password to "123456"?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, reset it',
+                heightAuto: false
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: DomainName + "/api/Home/PasswordReset?Password=123456&userNo=" + id,
+                        type: "POST",
+                        success: function (res) {
+                            Swal.fire({ title: 'Reset!', text: 'The password has been reset successfully.', icon: 'success', confirmButtonColor: '#10b981', heightAuto: false });
+                        },
+                        error: function (xhr) {
+                            Swal.fire({ title: 'Error!', text: 'Failed to reset password.', icon: 'error', heightAuto: false });
+                        }
+                    });
+                }
+            });
+        };
+
+        // 5.7 — Init Modal Form
+        // Populates dropdown options and binds record data into the form inputs.
+        function initModalForm(mode, data) {
+            data = data || {};
+            var modal = document.getElementById('main-modal');
+            var body = modal.getBodyElement();
+            if (!body) return;
+
+            var statusEl = $(body).find('#field-status');
+            if (!statusEl.hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(statusEl[0], { width: '100%', dropdownParent: PremiumSelect2.dropdownParentFromModal(modal) });
+            }
+
+            var compEl = $(body).find('#field-company');
+            if (!compEl.hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(compEl[0], {
+                    width: '100%',
+                    placeholder: 'Select Company',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    endpoint: '/api/OtherMasters/api/GetData/Load?MasterType=Company&SubscID=0',
+                    mapItem: function (x) {
+                        return { id: x.masterName || x.branchCode || x, text: x.masterName || x.branchName || x };
+                    }
+                });
+            }
+
+            var roleEl = $(body).find('#field-role');
+            if (!roleEl.hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(roleEl[0], {
+                    width: '100%',
+                    placeholder: 'Select Role',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    endpoint: '/api/OtherMasters/api/GetData/Load?MasterType=Designation&SubscID=0',
+                    mapItem: function (x) {
+                        return { id: x.masterName, text: x.masterName };
+                    }
+                });
+            }
+
+            var $comp = $(body).find('#field-company');
+            var $des = $(body).find('#field-role');
+
+            // Set values
+            $(body).find('#record-id').val(data.mTransNo || 0);
+            $(body).find('#field-name').val(data.userName || '');
+            $(body).find('#field-userid').val(data.userId || '');
+            $(body).find('#field-email').val(data.emailId || data.email || '');
+
+            var statusStr = (data.lockStatus === 'Y' || data.status === 'Active') ? 'Active' : 'Inactive';
+            $(body).find('#field-status').val(statusStr).trigger('change');
+
+            var compVal = data.oprCompany || data.branch || data.company || '';
+            if (compVal && $comp.find('option[value="' + compVal + '"]').length === 0) {
+                $comp.append('<option value="' + compVal + '">' + compVal + '</option>');
+            }
+            $comp.val(compVal).trigger('change');
+
+            var desVal = data.designation || data.role || '';
+            if (desVal && $des.find('option[value="' + desVal + '"]').length === 0) {
+                $des.append('<option value="' + desVal + '">' + desVal + '</option>');
+            }
+            $des.val(desVal).trigger('change');
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 6 — COMPONENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 6.1 — Render Components
+        // Initializes the main navigation shell and premium data grid.
+        function renderComponents() {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+
+            var grid = document.getElementById('page-grid');
+            if (grid) {
+                grid.setOptions({
+                    columns: [
+                        { field: 'userName', headerName: 'User Name', flex: 1.2, minWidth: 200 },
+                        { field: 'userId', headerName: 'User Id', flex: 1, minWidth: 150 },
+                        { field: 'designation', headerName: 'Designation', flex: 1, minWidth: 150 },
+                        { field: 'emailId', headerName: 'Email', flex: 1.2, minWidth: 200 },
+                        {
+                            field: 'status', headerName: 'Status', flex: 0.8, minWidth: 100,
+                            cellRenderer: function (params) {
+                                var val = params.value || '';
+                                if (val === 'Active') return '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">' + val + '</span>';
+                                return '<span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">' + val + '</span>';
+                            }
+                        },
+                        {
+                            field: 'resetPw', headerName: 'Reset Pw', flex: 0.8, minWidth: 100,
+                            cellRenderer: function (params) {
+                                return '<button onclick="window.resetPassword(\'' + params.data.id + '\')" class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded hover:bg-blue-200">Reset</button>';
+                            }
+                        }
+                    ],
+                    rowData: []
+                });
+                grid.render();
+
+                // Move Add button into the grid actions slot beside search bar
+                var addBtn = document.getElementById('add-user-btn');
+                if (addBtn && typeof grid.getActionsSlot === 'function') {
+                    addBtn.classList.remove('hidden');
+                    grid.getActionsSlot().appendChild(addBtn);
+                }
+            }
+
+            loadUserMasterIntoGrid();
+        }
+        // 6.2 — Update Dashboard KPIs
+        // Computes total and active users, then updates the top KPI cards.
+        window.updateDashboardKPIs = function () {
+            var total = recordList.length;
+            var active = recordList.filter(function (r) { return r.lockStatus === 'Y'; }).length;
+
+            var kpis = document.getElementById('kpiManager');
+            if (kpis && typeof kpis.setCards === 'function') {
+                kpis.setCards([
+                    { id: 'total-users', label: 'Total Users', value: total, icon: 'bi-people', color: 'text-blue-600' },
+                    { id: 'active-users', label: 'Active Users', value: active, icon: 'bi-person-check', color: 'text-green-600' }
+                ]);
+            }
+        };
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 7.1 — Bind Events
+        // Attaches event listeners for the "Add User" button.
+        function bindEvents() {
+            var addBtn = document.getElementById('add-user-btn');
+            var modal = document.getElementById('main-modal');
+
+            if (addBtn && modal) {
+                addBtn.addEventListener('click', function () {
+                    modalMode = 'add';
+                    editingRecord = null;
+                    document.getElementById('main-form').reset();
+
+                    modal.open({
+                        mode: 'add',
+                        title: 'Add New User',
+                        subtitle: 'Configure user name and roles',
+                        onSubmit: function () { saveRecord(); }
+                    });
+
+                    initModalForm('add', {});
+                });
+            }
+        }
+
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 7.1 — Bind Events
+        // Attaches event listeners for the "Add User" button.
+        function bindEvents() {
+            var addBtn = document.getElementById('add-user-btn');
+            var modal = document.getElementById('main-modal');
+
+            if (addBtn && modal) {
+                addBtn.addEventListener('click', function () {
+                    modalMode = 'add';
+                    editingRecord = null;
+                    document.getElementById('main-form').reset();
+
+                    modal.open({
+                        mode: 'add',
+                        title: 'Add New User',
+                        subtitle: 'Configure user name and roles',
+                        onSubmit: function () { saveRecord(); }
+                    });
+
+                    initModalForm('add', {});
+                });
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 8 — INIT
+        // ─────────────────────────────────────────────────────────────────
+
+        $(document).ready(function () {
+            renderComponents();
+            bindEvents();
+
+        });
+    </script>
+</body>
+
+</html>

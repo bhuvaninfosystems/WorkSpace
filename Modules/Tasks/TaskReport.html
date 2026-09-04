@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Task Report</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Tailwind CSS (Using local CDN path as per project standard) -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+
+    <!-- Bootstrap Icons (Required by navigation for icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <!-- GSAP for animations (Required by navigation.js) -->
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+
+    <!-- jQuery -->
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Navigation Component Script -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+
+    <!-- KPI Manager Script -->
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+
+    <!-- AG Grid -->
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+
+    <!-- Select2 -->
+    <link href="../../Config/cdn/select2.min.css" rel="stylesheet" />
+    <script src="../../Config/cdn/select2.full.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="../../Config/cdn/sweetalert2_11.js"></script>
+
+    <!-- UI Button Component -->
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+
+    <!-- Premium Input Styles -->
+    <script src="../../UI_Components/modals/components/input-field.js"></script>
+
+    <!-- Premium Select2 Component -->
+    <script src="../../UI_Components/modals/components/select2-field.js"></script>
+
+    <!-- Popup Modal Component -->
+    <script src="../../UI_Components/modals/popup-modal.js"></script>
+
+    <!-- Data Grid Component -->
+    <script src="../../UI_Components/layout/data-grid.js"></script>
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SHELL (Standard layout containers for navigation) -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <div class="h-full w-full flex relative">
+        <!-- 1. Sidebar Container: Hosts the vertical navigation menu on desktop screens -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- 2. Top Navigation Container: Hosts the top header bar with user profile, breadcrumbs, etc. -->
+            <div id="top-nav-container"></div>
+
+            <!-- 3. Main Content Canvas: The primary scrollable area for page content -->
+            <main id="main-canvas" class="relative flex-1 bg-gray-50/40 overflow-y-auto flex flex-col">
+
+                <!-- Main Grid Report Container -->
+                <div class="w-full h-full bg-white shadow-sm relative overflow-hidden flex flex-col">
+                    <!-- Tabs Row -->
+                    <div class="px-6 bg-white border-b border-gray-200">
+                        <div class="flex gap-6 overflow-x-auto no-scrollbar" id="frequency-tabs" role="tablist">
+                            <button type="button" data-freq-tab="all"
+                                class="py-3 text-sm font-semibold border-b-2 border-secondary-500 text-secondary-500 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">All</button>
+                            <button type="button" data-freq-tab="particular"
+                                class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">One-time</button>
+                            <button type="button" data-freq-tab="daily"
+                                class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Daily</button>
+                            <button type="button" data-freq-tab="weekly"
+                                class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Weekly</button>
+                            <button type="button" data-freq-tab="monthly"
+                                class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Monthly</button>
+                            <button type="button" data-freq-tab="quarterly"
+                                class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Quarterly</button>
+                            <button type="button" data-freq-tab="yearly"
+                                class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Yearly</button>
+                        </div>
+                    </div>
+
+                    <premium-grid id="task-grid" class="flex-1 w-full min-h-0 mb-4 sm:mb-0" data-show-sino="true"
+                        data-show-actions="false" data-pagination="true"
+                        data-pagination-page-size="15" data-pagination-page-size-selector="[5, 10, 15, 20, 50]"
+                        data-floating-filter="false" data-row-height="40" data-auto-fill-height="true" data-min-height="200"
+                        data-suppress-size-to-fit="false">
+                        <div slot="actions" class="flex items-center gap-3">
+                            <premium-button id="add-task-btn" icon="bi-funnel" label="View List" variant="outline"
+                                bg-color="bg-gray-200" text-color="text-gray-800"></premium-button>
+                        </div>
+                    </premium-grid>
+                </div>
+
+                <!-- View List (Date Filter) Popup Modal -->
+                <premium-popup-modal id="view-list-modal" data-width="520px" data-max-width="95%" data-height="340px">
+                    <template data-modal-body>
+                        <form id="view-list-form" class="space-y-4" onsubmit="return false;">
+                            <div class="sm:hidden space-y-2 pb-3 border-b border-gray-100">
+                                <label data-premium-label>Report source</label>
+                                <div class="inline-flex items-center gap-0 rounded-lg border border-gray-200 bg-white px-0.5 py-0.5 shadow-sm"
+                                    role="group" aria-label="Report source">
+                                    <button type="button" data-report-mode="sender" title="Tasks you sent"
+                                        class="px-3 py-1.5 text-xs font-semibold rounded-md bg-secondary-500 text-white">Sender</button>
+                                    <button type="button" data-report-mode="receiver" title="Tasks assigned to you"
+                                        class="px-3 py-1.5 text-xs font-semibold rounded-md text-gray-500 hover:bg-gray-50">Receiver</button>
+                                </div>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 grid-cols-1 gap-2">
+                                <div class="space-y-1">
+                                    <label data-premium-label>From Date *</label>
+                                    <input type="date" id="FromDate" data-premium-input required>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>To Date *</label>
+                                    <input type="date" id="ToDate" data-premium-input required>
+                                </div>
+                            </div>
+                        </form>
+                    </template>
+                </premium-popup-modal>
+            </main>
+        </div>
+    </div>
+
+    <!-- 8. Mobile Bottom Navigation: Replaces sidebar on small mobile screens -->
+    <div id="bottom-nav-container"></div>
+
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ Task Report Script                                               ║
+        // ║ Task module reporting logic and API interaction.                 ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        //
+        //  SECTIONS:  1-CONSTANTS  2-STATE  3-DATA  4-UI HELPERS
+        //             5-FEATURE LOGIC  6-COMPONENTS  7-EVENTS  8-INIT
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 1 — CONSTANTS
+        // ─────────────────────────────────────────────────────────────────
+        if (!localStorage.getItem('LogUser')) {
+            window.location.href = '../../CommonPages/login.html';
+        }
+
+        const DomainName = localStorage.getItem('Domain') || '';
+        const UserNo = Number(JSON.parse(localStorage.getItem('LogUser')).mTransNo);
+        const mSubscID = JSON.parse(localStorage.getItem('LogUser')).subscID;
+        const mUserType = JSON.parse(localStorage.getItem('LogUser')).userType;
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 2 — STATE
+        // ─────────────────────────────────────────────────────────────────
+        var taskGridApi = null;
+        var tasks = [];
+        var reportApiMode = 'sender';
+        var lastReportQuery = null;
+        var selectedFreqTab = 'all';
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 3 — DATA
+        // ─────────────────────────────────────────────────────────────────
+        function mapReportApiRow(row, index) {
+            var id = row.id != null ? String(row.id)
+                : row.taskNo != null ? String(row.taskNo)
+                    : row.TaskNo != null ? String(row.TaskNo)
+                        : 'report-' + index;
+
+            var assignTypeStr = (row.taskAssignType || row.TaskAssignType || row.frequency || row.Frequency || 'particular').toString().toLowerCase();
+            var displayAssignType = assignTypeStr === 'particular' ? 'One-time' : (assignTypeStr.charAt(0).toUpperCase() + assignTypeStr.slice(1));
+
+            return {
+                id: id,
+                taskName: row.taskName || row.TaskName || '',
+                description: row.taskDescription || row.TaskDescription || row.description || '',
+                taskDate: row.taskDate || row.TaskDate || '',
+                taskTime: row.taskTime || row.TaskTime || '',
+                dueDate: row.dueDate || row.DueDate || '',
+                dueTime: row.dueTime || row.DueTime || '',
+                priority: row.taskPriority || row.TaskPriority || row.priority || '',
+                assignmentLabel: row.assignName || row.AssignName || '',
+                status: row.taskStatus || row.TaskStatus || row.status || '',
+                assignmentType: row.assignmentType || 'individual',
+                frequency: assignTypeStr,
+                taskAssignType: displayAssignType
+            };
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 4 — UI HELPERS
+        // ─────────────────────────────────────────────────────────────────
+        function formatDateDisplay(ymd) {
+            var s = $.trim(String(ymd || '')).slice(0, 10);
+            if (!s) return '—';
+            var p = s.split('-');
+            if (p.length !== 3) return s;
+            return p[2] + '-' + p[1] + '-' + p[0];
+        }
+        function refreshGridData() {
+            var pageGrid = document.getElementById('task-grid');
+            if (pageGrid && typeof pageGrid.setRowData === 'function') {
+                var filtered = tasks;
+
+                // Date filtering based on View List pop-up range
+                if (lastReportQuery && lastReportQuery.from && lastReportQuery.to) {
+                    filtered = $.grep(filtered, function (t) {
+                        var dStr = $.trim(t.taskDate || t.dueDate || '');
+                        if (dStr.indexOf('T') > 0) dStr = dStr.split('T')[0];
+                        if (dStr.indexOf(' ') > 0) dStr = dStr.split(' ')[0];
+                        if (!dStr) return true; // Keep tasks without date? We'll keep them for safety.
+
+                        var p = dStr.split(/[-\/]/);
+                        if (p.length === 3 && p[0].length === 2 && p[2].length === 4) {
+                            dStr = p[2] + '-' + p[1] + '-' + p[0]; // Convert DD-MM-YYYY to YYYY-MM-DD
+                        }
+
+                        return dStr >= lastReportQuery.from && dStr <= lastReportQuery.to;
+                    });
+                }
+
+                if (selectedFreqTab !== 'all') {
+                    filtered = $.grep(filtered, function (t) {
+                        return (t.frequency || 'particular') === selectedFreqTab;
+                    });
+                }
+
+
+                pageGrid.setRowData(filtered);
+            }
+        }
+
+        function normalizeReportPayload(result) {
+            if (result == null) return [];
+            if ($.isArray(result)) return result;
+            if ($.isArray(result.data)) return result.data;
+            if ($.isArray(result.Data)) return result.Data;
+            return [];
+        }
+
+        function syncReportModeToolbarUi() {
+            var isSender = reportApiMode === 'sender';
+            $('[data-report-mode]').each(function () {
+                var mode = $(this).attr('data-report-mode');
+                var active = (mode === 'sender' && isSender) || (mode === 'receiver' && !isSender);
+                $(this)
+                    .toggleClass('bg-secondary-500 text-white', active)
+                    .toggleClass('text-gray-500 hover:bg-gray-50', !active);
+            });
+        }
+
+
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 5 — FEATURE LOGIC
+        // ─────────────────────────────────────────────────────────────────
+        function getTaskReportApiUrl() {
+            var path = reportApiMode === 'receiver'
+                ? '/api/Task/TaskDataUser'
+                : '/api/Task/TaskDataSender';
+            return DomainName + path;
+        }
+
+        function loadTaskReportFromApi(fromDate, toDate, opts) {
+            opts = opts || {};
+            var taskReportGrid = document.getElementById('task-grid');
+            var closeModal = opts.closeModal === true;
+            var viewListModal = opts.viewListModal;
+
+            if (taskReportGrid && typeof taskReportGrid.setTableLoading === 'function') {
+                taskReportGrid.setTableLoading(
+                    true,
+                    reportApiMode === 'receiver' ? 'Loading receiver report…' : 'Loading sender report…'
+                );
+            }
+
+            $.ajax({
+                url: getTaskReportApiUrl(),
+                type: 'GET',
+                dataType: 'json',
+                data: {
+                    FromDate: fromDate,
+                    ToDate: toDate,
+                    UserNo: UserNo
+                },
+                success: function (result) {
+                    var rows = normalizeReportPayload(result);
+                    tasks = $.map(rows, function (row, idx) { return mapReportApiRow(row, idx); });
+
+                    lastReportQuery = { from: fromDate, to: toDate };
+                    refreshGridData();
+                    if (taskReportGrid && typeof taskReportGrid.setTableLoading === 'function') {
+                        taskReportGrid.setTableLoading(false);
+                    }
+                    if (closeModal && viewListModal && typeof viewListModal.close === 'function') {
+                        viewListModal.close();
+                    }
+                    if (!opts.skipSuccessToast) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: reportApiMode === 'receiver' ? 'Receiver report loaded' : 'Sender report loaded',
+                            showConfirmButton: false,
+                            timer: 1800
+                        });
+                    }
+                },
+                error: function (xhr) {
+                    if (taskReportGrid && typeof taskReportGrid.setTableLoading === 'function') {
+                        taskReportGrid.setTableLoading(false);
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Could not load report',
+                        text: (xhr && xhr.responseText) ? String(xhr.responseText).slice(0, 500) : 'Please try again.',
+                        scrollbarPadding: false,
+                        heightAuto: false
+                    });
+                }
+            });
+        }
+
+
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 6 — COMPONENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        function renderComponents() {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+
+
+
+            var taskGrid = document.getElementById('task-grid');
+            if (taskGrid) {
+                taskGrid.setOptions({
+                    columns: [
+                        { field: 'taskName', headerName: 'Task', flex: 1, minWidth: 180, filter: true },
+                        { field: 'description', headerName: 'Description', flex: 1.4, minWidth: 260, filter: true },
+                        { field: 'taskDate', headerName: 'Task Date', minWidth: 120, filter: true, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
+                        { field: 'taskTime', headerName: 'Task Time', minWidth: 120, filter: true },
+                        { field: 'dueDate', headerName: 'Due Date', minWidth: 130, filter: true, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
+                        { field: 'dueTime', headerName: 'Due Time', minWidth: 120, filter: true },
+                        { field: 'priority', headerName: 'Priority', minWidth: 120, filter: true },
+                        { field: 'assignmentLabel', headerName: 'Assigned To', minWidth: 170, filter: true },
+                        { field: 'taskAssignType', headerName: 'Assign Type', minWidth: 130, filter: true },
+                        { field: 'status', headerName: 'Status', width: 120, filter: true }
+                    ],
+                    rowData: tasks
+                });
+                taskGridApi = taskGrid.render();
+
+                var slot = taskGrid.getActionsSlot();
+                if (slot) {
+                    var toggleWrap = document.createElement('div');
+                    toggleWrap.className = 'hidden sm:inline-flex items-center gap-0 rounded-lg border border-gray-200 bg-white px-0.5 py-0.5 shadow-sm mr-2';
+                    toggleWrap.setAttribute('role', 'group');
+                    toggleWrap.setAttribute('aria-label', 'Report source');
+                    toggleWrap.innerHTML =
+                        '<button type="button" data-report-mode="sender" title="Tasks you sent"'
+                        + ' class="px-3 py-1.5 text-xs font-semibold rounded-md bg-secondary-500 text-white">Sender</button>'
+                        + '<button type="button" data-report-mode="receiver" title="Tasks assigned to you"'
+                        + ' class="px-3 py-1.5 text-xs font-semibold rounded-md text-gray-500 hover:bg-gray-50">Receiver</button>';
+                    slot.appendChild(toggleWrap);
+                }
+
+                var $addBtnHost = $('premium-button[button-id="add-task-btn"]');
+                if ($addBtnHost.length && slot) {
+                    $addBtnHost.removeClass('hidden');
+                    slot.appendChild($addBtnHost.get(0));
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+        function bindReportModeToolbar() {
+            syncReportModeToolbarUi();
+            $(document).off('click.taskReportMode', '[data-report-mode]').on('click.taskReportMode', '[data-report-mode]', function () {
+                var mode = $(this).attr('data-report-mode');
+                if (!mode || mode === reportApiMode) return;
+                reportApiMode = mode === 'receiver' ? 'receiver' : 'sender';
+                syncReportModeToolbarUi();
+                if (lastReportQuery && lastReportQuery.from && lastReportQuery.to) {
+                    loadTaskReportFromApi(lastReportQuery.from, lastReportQuery.to, { skipSuccessToast: false });
+                }
+            });
+        }
+
+        function bindEvents() {
+
+
+            // Handle frequency filter tabs click
+            $(document).on('click', '[data-freq-tab]', function () {
+                var tab = $(this).attr('data-freq-tab');
+                selectedFreqTab = tab;
+
+                $('[data-freq-tab]').removeClass('border-secondary-500 text-secondary-500')
+                    .addClass('border-transparent text-gray-500 hover:text-gray-800');
+
+                $(this).removeClass('border-transparent text-gray-500 hover:text-gray-800')
+                    .addClass('border-secondary-500 text-secondary-500');
+
+                refreshGridData();
+            });
+
+
+
+            var viewListModal = document.getElementById('view-list-modal');
+
+            $('#add-task-btn').off('click.taskReport').on('click.taskReport', function () {
+                var modal = document.getElementById('view-list-modal');
+                if (!modal) return;
+
+                modal.open({
+                    title: 'View List',
+                    subtitle: 'Select date range to load the report',
+                    buttons: [
+                        { label: 'Cancel', type: 'secondary' },
+                        { label: 'View Record', type: 'accent', submit: true }
+                    ],
+                    onSubmit: function () {
+                        var body = modal.getBodyElement();
+                        if (!body) return;
+
+                        var fromDate = $(body).find('#FromDate').val() || '';
+                        var toDate = $(body).find('#ToDate').val() || '';
+
+                        if (!fromDate || !toDate) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Required',
+                                text: 'From Date and To Date are mandatory.',
+                                scrollbarPadding: false,
+                                heightAuto: false
+                            });
+                            return;
+                        }
+                        if (fromDate > toDate) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Invalid range',
+                                text: 'From Date must be earlier than or equal to To Date.',
+                                scrollbarPadding: false,
+                                heightAuto: false
+                            });
+                            return;
+                        }
+                        if (!DomainName || !$.isNumeric(UserNo)) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Session',
+                                text: 'Domain or user is not available. Please sign in again.',
+                                scrollbarPadding: false,
+                                heightAuto: false
+                            });
+                            return;
+                        }
+
+                        loadTaskReportFromApi(fromDate, toDate, {
+                            closeModal: true,
+                            viewListModal: modal,
+                            skipSuccessToast: false
+                        });
+                    }
+                });
+
+                var body = modal.getBodyElement();
+                if (!body) return;
+
+                syncReportModeToolbarUi();
+
+                var today = new Date();
+                var fromDefault = new Date(today.getFullYear(), today.getMonth(), 2);
+                var $from = $(body).find('#FromDate');
+                var $to = $(body).find('#ToDate');
+                if (!$from.val()) {
+                    var fy = fromDefault.getFullYear();
+                    var fm = ('0' + (fromDefault.getMonth() + 1)).slice(-2);
+                    var fd = ('0' + fromDefault.getDate()).slice(-2);
+                    $from.val(fy + '-' + fm + '-' + fd);
+                }
+                if (!$to.val()) {
+                    var ty = today.getFullYear();
+                    var tm = ('0' + (today.getMonth() + 1)).slice(-2);
+                    var td = ('0' + today.getDate()).slice(-2);
+                    $to.val(ty + '-' + tm + '-' + td);
+                }
+                $from.trigger('focus');
+            });
+
+
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 8 — INIT
+        // ─────────────────────────────────────────────────────────────────
+        $(function () {
+            renderComponents();
+            bindReportModeToolbar();
+            bindEvents();
+
+            // Load 1 month default data on page load
+            var toDate = new Date();
+            var fromDate = new Date();
+            fromDate.setMonth(fromDate.getMonth() - 1);
+
+            var toDateStr = toDate.toISOString().slice(0, 10);
+            var fromDateStr = fromDate.toISOString().slice(0, 10);
+
+            loadTaskReportFromApi(fromDateStr, toDateStr, { skipSuccessToast: true });
+        });
+    </script>
+</body>
+
+</html>

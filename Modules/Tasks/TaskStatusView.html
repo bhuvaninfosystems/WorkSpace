@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Task Status View</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+    <link href="../../Config/cdn/select2.min.css" rel="stylesheet" />
+    <script src="../../Config/cdn/select2.full.min.js"></script>
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+    <script src="../../UI_Components/modals/popup-modal.js"></script>
+    <script src="../../UI_Components/modals/components/select2-field.js"></script>
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <div class="h-full w-full flex relative">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- Top Header Navigation -->
+            <div id="top-nav-container"></div>
+
+            <!-- Content Area -->
+            <main id="main-canvas" class="relative flex-1 bg-gray-50/40 overflow-y-auto flex flex-col">
+
+                <!-- Tabs Row -->
+                <div class="px-6 bg-white border-b border-gray-200">
+                    <div class="flex gap-6 overflow-x-auto no-scrollbar" id="frequency-tabs" role="tablist">
+                        <button type="button" data-freq-tab="all"
+                            class="py-3 text-sm font-semibold border-b-2 border-secondary-500 text-secondary-500 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">All</button>
+                        <button type="button" data-freq-tab="particular"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">One-time</button>
+                        <button type="button" data-freq-tab="daily"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Daily</button>
+                        <button type="button" data-freq-tab="weekly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Weekly</button>
+                        <button type="button" data-freq-tab="monthly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Monthly</button>
+                        <button type="button" data-freq-tab="quarterly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Quarterly</button>
+                        <button type="button" data-freq-tab="yearly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Yearly</button>
+                    </div>
+                </div>
+
+                <!-- KPI Statistics -->
+                <premium-kpi-manager id="kpiManager"></premium-kpi-manager>
+
+                <!-- Filters & Controls Below KPI -->
+                <div class="px-6 pt-3 flex items-center justify-end">
+                    <!-- Company Filter -->
+                    <div id="company-filter-container" class="flex items-center w-[300px]">
+                        <select id="company-filter" class="w-full" data-premium-input></select>
+                    </div>
+                </div>
+
+                <!-- Kanban Columns View -->
+                <div id="board-view" class="flex-1 min-h-0 overflow-x-auto px-6 pb-6 pt-3">
+                    <div class="flex h-full min-h-[350px] gap-6 select-none">
+
+                        <!-- Overdue Column -->
+                        <div
+                            class="flex-1 min-w-[250px] max-w-[300px] bg-red-50/20 rounded-2xl flex flex-col border border-red-100 shadow-sm">
+                            <div
+                                class="px-4 py-3 border-b border-red-100/50 flex items-center justify-between bg-white rounded-t-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    <h3 class="text-sm font-bold text-red-700">Overdue</h3>
+                                </div>
+                                <span class="px-2 py-0.5 text-xs font-bold bg-red-50 text-red-600 rounded-full"
+                                    id="count-overdue">0</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 drop-zone" data-column="Overdue">
+                            </div>
+                        </div>
+
+                        <!-- Due today Column -->
+                        <div
+                            class="flex-1 min-w-[250px] max-w-[300px] bg-orange-50/20 rounded-2xl flex flex-col border border-orange-100 shadow-sm">
+                            <div
+                                class="px-4 py-3 border-b border-orange-100/50 flex items-center justify-between bg-white rounded-t-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                                    <h3 class="text-sm font-bold text-orange-700">Due today</h3>
+                                </div>
+                                <span class="px-2 py-0.5 text-xs font-bold bg-orange-50 text-orange-600 rounded-full"
+                                    id="count-due-today">0</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 drop-zone" data-column="Due today">
+                            </div>
+                        </div>
+
+                        <!-- In progress Column -->
+                        <div
+                            class="flex-1 min-w-[250px] max-w-[300px] bg-blue-50/20 rounded-2xl flex flex-col border border-blue-100 shadow-sm">
+                            <div
+                                class="px-4 py-3 border-b border-blue-100/50 flex items-center justify-between bg-white rounded-t-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    <h3 class="text-sm font-bold text-blue-700">In progress</h3>
+                                </div>
+                                <span class="px-2 py-0.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-full"
+                                    id="count-in-progress">0</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 drop-zone"
+                                data-column="In progress"></div>
+                        </div>
+
+                        <!-- Upcoming Column -->
+                        <div
+                            class="flex-1 min-w-[250px] max-w-[300px] bg-green-50/10 rounded-2xl flex flex-col border border-green-100 shadow-sm">
+                            <div
+                                class="px-4 py-3 border-b border-green-100/50 flex items-center justify-between bg-white rounded-t-2xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                    <h3 class="text-sm font-bold text-green-700">Upcoming</h3>
+                                </div>
+                                <span class="px-2 py-0.5 text-xs font-bold bg-green-50 text-green-600 rounded-full"
+                                    id="count-upcoming">0</span>
+                            </div>
+                            <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 drop-zone" data-column="Upcoming">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Task Detail Popup Modal -->
+                <premium-popup-modal id="task-detail-modal" data-width="600px" data-max-width="95%" data-height="auto"></premium-popup-modal>
+            </main>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div id="bottom-nav-container"></div>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        var selectedFreqTab = 'all';
+        var selectedCompany = 'all';
+
+        function formatDateDisplay(ymd) {
+            var s = $.trim(String(ymd || '')).slice(0, 10);
+            if (!s) return '—';
+            var p = s.split('-');
+            if (p.length !== 3) return s;
+            return p[2] + '-' + p[1] + '-' + p[0];
+        }
+
+        // Same mockTaskList as NewTask.html to showcase status data correctly
+        var mockTaskList = [
+            {
+                mTransNo: 101,
+                taskName: 'Refactor Accounts Module Grids',
+                companyId: 'C01',
+                companyLabel: 'Google DeepMind',
+                assignmentType: 'individual',
+                assigneeId: '1',
+                assignmentLabel: 'Emp-01 — Bhuvan',
+                priority: 'High',
+                status: 'In Progress',
+                dueDate: '2026-06-30',
+                dueTime: '18:00',
+                description: 'Refactor Accounts reports to implement horizontal column scrolling with minWidths.'
+            },
+            {
+                mTransNo: 102,
+                taskName: 'Design Manager Dashboard Mockup',
+                companyId: 'C02',
+                companyLabel: 'Alphabet Inc.',
+                assignmentType: 'group',
+                assigneeId: '11',
+                assignmentLabel: 'Group-B (Design Team)',
+                priority: 'Medium',
+                status: 'Open',
+                dueDate: '2026-07-02',
+                dueTime: '15:30',
+                description: 'Create responsive mockups for the new Premium Manager Dashboard using GSAP animations.'
+            },
+            {
+                mTransNo: 103,
+                taskName: 'Write Unit Tests for Voucher Registers',
+                companyId: 'C03',
+                companyLabel: 'Anthropic PBC',
+                assignmentType: 'individual',
+                assigneeId: '3',
+                assignmentLabel: 'Emp-03 — Ganesh',
+                priority: 'Low',
+                status: 'Completed',
+                dueDate: '2026-06-25',
+                dueTime: '12:00',
+                description: 'Add tests for standard calculations in Payment, Contra, Receipt, and Journal Registers.'
+            },
+            {
+                mTransNo: 104,
+                companyId: 'C01',
+                companyLabel: 'Google DeepMind',
+                taskName: 'Review Deployment Credentials and Logs',
+                assignmentType: 'group',
+                assigneeId: '10',
+                assignmentLabel: 'Group-A (Development Team)',
+                priority: 'High',
+                status: 'Open',
+                dueDate: '2026-06-20',
+                dueTime: '09:00',
+                description: 'Check staging pipeline and verify database connectivity log records.'
+            },
+            {
+                mTransNo: 105,
+                companyId: 'C01',
+                companyLabel: 'Google DeepMind',
+                taskName: 'Daily Production Sync Meeting',
+                assignmentType: 'group',
+                assigneeId: '10',
+                assignmentLabel: 'Group-A (Development Team)',
+                priority: 'Medium',
+                status: 'Open',
+                frequency: 'daily',
+                startDate: '2026-06-29',
+                endDate: '2026-12-31',
+                repDueTime: '10:00',
+                dueDate: '2026-06-29',
+                dueTime: '10:00',
+                description: 'Brief daily stand-up meeting with team members to discuss tasks progress.'
+            },
+            {
+                mTransNo: 106,
+                companyId: 'C02',
+                companyLabel: 'Alphabet Inc.',
+                taskName: 'Weekly Server Backups and Health check',
+                assignmentType: 'individual',
+                assigneeId: '2',
+                assignmentLabel: 'Emp-02 — Bhavya',
+                priority: 'High',
+                status: 'Open',
+                frequency: 'weekly',
+                startDate: '2026-06-29',
+                endDate: '2026-12-31',
+                repDueTime: '11:00',
+                weeklyDays: ['Monday', 'Friday'],
+                dueDate: '2026-06-29',
+                dueTime: '11:00',
+                description: 'Run automated server backup scripts and check disk space and error logs.'
+            },
+            {
+                mTransNo: 107,
+                companyId: 'C03',
+                companyLabel: 'Anthropic PBC',
+                taskName: 'Monthly Financial Reconciliation',
+                assignmentType: 'individual',
+                assigneeId: '1',
+                assignmentLabel: 'Emp-01 — Bhuvan',
+                priority: 'High',
+                status: 'Open',
+                frequency: 'monthly',
+                startDate: '2026-06-29',
+                endDate: '2026-12-31',
+                repDueTime: '12:00',
+                monthlyDay: '5',
+                dueDate: '2026-06-29',
+                dueTime: '12:00',
+                description: 'Review and balance ledger registers, invoices, and expense sheets.'
+            },
+            {
+                mTransNo: 108,
+                companyId: 'C04',
+                companyLabel: 'OpenAI Corp',
+                taskName: 'Quarterly Board Presentation Report',
+                assignmentType: 'group',
+                assigneeId: '11',
+                assignmentLabel: 'Group-B (Design Team)',
+                priority: 'High',
+                status: 'Open',
+                frequency: 'quarterly',
+                startDate: '2026-06-29',
+                endDate: '2026-12-31',
+                repDueTime: '14:00',
+                quarterlyMonth: '1',
+                quarterlyDay: '10',
+                dueDate: '2026-06-29',
+                dueTime: '14:00',
+                description: 'Prepare visual presentation decks and reports for board sync.'
+            },
+            {
+                mTransNo: 109,
+                companyId: 'C01',
+                companyLabel: 'Google DeepMind',
+                taskName: 'Yearly Infrastructure Security Audit',
+                assignmentType: 'individual',
+                assigneeId: '3',
+                assignmentLabel: 'Emp-03 — Ganesh',
+                priority: 'High',
+                status: 'Open',
+                frequency: 'yearly',
+                startDate: '2026-06-29',
+                endDate: '2026-12-31',
+                repDueTime: '16:00',
+                yearlyMonth: '0',
+                yearlyDay: '15',
+                dueDate: '2026-06-29',
+                dueTime: '16:00',
+                description: 'Verify server certificates, firewall policies, and run security audits.'
+            }
+        ];
+
+        window.updateDashboardKPIs = function () {
+            var kpi = document.getElementById('kpiManager');
+            if (!kpi) return;
+
+            var total = mockTaskList.length;
+            var high = mockTaskList.filter(t => t.priority === 'High').length;
+            var completed = mockTaskList.filter(t => t.status === 'Completed').length;
+
+            var todayStr = new Date().toISOString().split('T')[0];
+            var overdue = mockTaskList.filter(t => t.status !== 'Completed' && t.dueDate < todayStr).length;
+
+            if (typeof kpi.setCards === 'function') {
+                kpi.setCards([
+                    { id: 'total_tasks', label: 'Total Tasks', value: String(total), icon: 'bi-collection' },
+                    { id: 'high_priority', label: 'High Priority', value: String(high), icon: 'bi-exclamation-octagon' },
+                    { id: 'overdue_tasks', label: 'Overdue Tasks', value: String(overdue), icon: 'bi-exclamation-triangle' },
+                    { id: 'completed_tasks', label: 'Completed Tasks', value: String(completed), icon: 'bi-check-circle' }
+                ]);
+            } else {
+                setTimeout(window.updateDashboardKPIs, 100);
+            }
+        };
+
+        window.loadTasksIntoGrid = function () {
+            var filteredData = mockTaskList;
+
+            // 1. Filter by Frequency tab
+            if (selectedFreqTab !== 'all') {
+                filteredData = filteredData.filter(t => (t.frequency || 'particular') === selectedFreqTab);
+            }
+
+            // 2. Filter by Company
+            if (selectedCompany !== 'all') {
+                filteredData = filteredData.filter(t => t.companyId === selectedCompany);
+            }
+
+            window.updateDashboardKPIs();
+            window.renderBoard(filteredData);
+        };
+
+        window.renderBoard = function (filteredData) {
+            var todayStr = new Date().toISOString().split('T')[0];
+
+            var columns = ['Overdue', 'Due today', 'In progress', 'Upcoming'];
+            columns.forEach(col => {
+                var zone = document.querySelector('[data-column="' + col + '"]');
+                var badgeId = 'count-' + col.toLowerCase().replace(/\s+/g, '-');
+                var badge = document.getElementById(badgeId);
+                if (!zone) return;
+
+                var tasks = filteredData.filter(t => {
+                    if (t.status === 'Completed') return false;
+
+                    if (col === 'In progress') {
+                        return t.status === 'In Progress';
+                    }
+
+                    if (t.status === 'In Progress') return false; // Exclude from date-based columns
+
+                    if (!t.dueDate) return false;
+
+                    if (col === 'Overdue') {
+                        return t.dueDate < todayStr;
+                    } else if (col === 'Due today') {
+                        return t.dueDate === todayStr;
+                    } else if (col === 'Upcoming') {
+                        return t.dueDate > todayStr;
+                    }
+                    return false;
+                });
+
+                if (badge) badge.innerText = tasks.length;
+
+                if (tasks.length === 0) {
+                    zone.innerHTML = '<div class="h-24 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 text-xs">No tasks</div>';
+                    return;
+                }
+
+                zone.innerHTML = tasks.map(t => {
+                    var priorityBadge = '';
+                    if (t.priority === 'High') {
+                        priorityBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-700 border border-red-100">High</span>';
+                    } else if (t.priority === 'Medium') {
+                        priorityBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">Medium</span>';
+                    } else {
+                        priorityBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-50 text-gray-700 border border-gray-100">Low</span>';
+                    }
+
+                    return [
+                        '<div class="bg-white border border-gray-200/80 rounded-xl p-3 shadow-sm relative hover:border-secondary-200 transition-all duration-200 cursor-pointer" onclick="window.openTaskDetail(', t.mTransNo, ')">',
+                        '  <div class="flex items-center justify-between">',
+                        '    <div class="flex items-center gap-2">',
+                        '      <span class="text-[10px] font-bold text-gray-400">#', t.mTransNo, '</span>',
+                        priorityBadge,
+                        '    </div>',
+                        '  </div>',
+                        '  <h4 class="mt-2 text-sm font-bold text-gray-800 line-clamp-2">', t.taskName, '</h4>',
+                        '  <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">',
+                        '    <span class="truncate pr-2"><i class="bi bi-person mr-1"></i>', (t.assignmentLabel || t.assignee || 'Unassigned'), '</span>',
+                        '    <span class="flex-shrink-0"><i class="bi bi-calendar3 mr-1"></i>', formatDateDisplay(t.dueDate), '</span>',
+                        '  </div>',
+                        '</div>'
+                    ].join('');
+                }).join('');
+            });
+        };
+
+        function loadCompanyDropdown() {
+            var $sel = $('#company-filter');
+            $sel.empty().append('<option value="all">All companys</option>');
+
+            var companies = {};
+            mockTaskList.forEach(function (t) {
+                if (t.companyId && t.companyLabel) {
+                    companies[t.companyId] = t.companyLabel;
+                }
+            });
+
+            $.each(companies, function (id, label) {
+                $sel.append('<option value="' + id + '">' + label + '</option>');
+            });
+
+            if (!$sel.hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init($sel[0], {
+                    minimumResultsForSearch: 0,
+                    placeholder: 'All companys',
+                    width: '100%'
+                });
+            }
+
+            $sel.on('change', function () {
+                selectedCompany = $(this).val();
+                window.loadTasksIntoGrid();
+            });
+        }
+
+        function renderComponents() {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+            loadCompanyDropdown();
+            window.loadTasksIntoGrid();
+        }
+
+        window.openTaskDetail = function(mTransNo) {
+            var task = mockTaskList.find(t => t.mTransNo === mTransNo);
+            if (!task) return;
+            
+            var modal = document.getElementById('task-detail-modal');
+            if (modal && typeof modal.open === 'function') {
+                var content = `
+                    <div class="space-y-4 text-sm text-gray-700 p-2">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">#${task.mTransNo}</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${task.priority === 'High' ? 'bg-red-50 text-red-700 border border-red-100' : task.priority === 'Medium' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-gray-50 text-gray-700 border border-gray-100'}">${task.priority} Priority</span>
+                        </div>
+                        <p class="text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">${task.description || 'No description provided.'}</p>
+                        
+                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                            <div>
+                                <span class="block text-xs font-semibold text-gray-400 mb-1">Status</span>
+                                <span class="font-medium">${task.status}</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-semibold text-gray-400 mb-1">Company</span>
+                                <span class="font-medium">${task.companyLabel || 'N/A'}</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-semibold text-gray-400 mb-1">Assigned To</span>
+                                <span class="font-medium">${task.assignmentLabel || task.assignee || 'Unassigned'}</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs font-semibold text-gray-400 mb-1">Due Date</span>
+                                <span class="font-medium text-secondary-600">${formatDateDisplay(task.dueDate)} ${task.dueTime || ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                modal.open({
+                    mode: 'view',
+                    title: task.taskName,
+                    subtitle: 'Detailed Task Information',
+                    bodyHtml: content,
+                    footer: false
+                });
+            }
+        };
+
+        function bindEvents() {
+            // Handle frequency filter tabs click
+            $(document).on('click', '[data-freq-tab]', function () {
+                var tab = $(this).attr('data-freq-tab');
+                selectedFreqTab = tab;
+
+                $('[data-freq-tab]').removeClass('border-secondary-500 text-secondary-500')
+                    .addClass('border-transparent text-gray-500 hover:text-gray-800');
+
+                $(this).removeClass('border-transparent text-gray-500 hover:text-gray-800')
+                    .addClass('border-secondary-500 text-secondary-500');
+
+                window.loadTasksIntoGrid();
+            });
+        }
+
+        $(document).ready(function () {
+            renderComponents();
+            bindEvents();
+        });
+    </script>
+</body>
+
+</html>

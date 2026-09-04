@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="./Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Workspace - Sign In</title>
+
+    <!-- CDN stack aligned with Tasks/Dashboard.html -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="./Config/style/global.css">
+
+    <script>window.__PREMIUM_SKIP_INITIAL_PAGE_LOADER__ = true;</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="./UI_Components/widgets/loading-overlay.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+
+    <!-- jQuery: login AJAX only (not used on Dashboard) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body
+    class="full-height-container overflow-y-auto font-['DM_Sans'] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <!-- Main Container -->
+    <div class="flex w-full full-height-container">
+
+        <!-- Hero Background Section -->
+        <div class="hidden md:flex md:w-[60%] p-2">
+            <div
+                class="carousel-container relative h-full w-full overflow-hidden rounded-2xl bg-[url('./Config/assets/images/Login_Bg.png')] bg-cover bg-center bg-no-repeat shadow-xl">
+            </div>
+        </div>
+
+        <!-- Content Section -->
+        <div class="flex w-full md:w-[40%] relative flex items-center justify-center p-8 bg-gray-50">
+
+            <div class="w-full max-w-sm">
+
+                <div class="text-center mb-10">
+                    <img src="./Config/assets/images/Logo.png" alt="Workspace Logo"
+                        class="mx-auto mb-5 h-auto w-20 object-contain">
+                    <h1 class="mb-2 text-4xl font-medium text-gray-900 md:text-5xl">Welcome <span
+                            class="font-semibold text-[var(--primary-color)]">Back</span></h1>
+                    <p class="text-gray-600 text-sm md:text-base">Secure your business. Control access and monitor
+                        activity.</p>
+                </div>
+
+                <!-- Login Form -->
+                <div class="translate-y-0 opacity-100 transition duration-700">
+                    <form id="login-form" class="space-y-6">
+                        <!-- Username Field -->
+                        <div>
+                            <label for="username" class="block text-sm font-semibold text-gray-600 ml-2 mb-1">
+                                Username
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="username" name="username"
+                                    class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] transition-all duration-200 text-gray-900 placeholder-gray-400 text-sm"
+                                    placeholder="Enter your username" required>
+                            </div>
+                        </div>
+
+                        <!-- Password Field -->
+                        <div>
+                            <label for="password" class="block text-sm font-semibold text-gray-600 ml-2 mb-1">
+                                Password
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="password" name="password"
+                                    class="w-full px-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] focus:border-[var(--primary-color)] transition-all duration-200 text-gray-900 placeholder-gray-400 text-sm"
+                                    placeholder="Enter your password" required>
+                                <button type="button" id="toggle-password"
+                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember Me & Forgot Password -->
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="remember-me" name="remember-me"
+                                    class="w-4 h-4 accent-[var(--primary-color)] bg-gray-100 border-gray-300 rounded focus:ring-[var(--primary-color)] focus:ring-2">
+                                <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                            </label>
+                            <a href="#" class="text-sm font-medium text-[var(--primary-color)] hover:opacity-80">
+                                Forgot password?
+                            </a>
+                        </div>
+
+                        <!-- Login Button -->
+                        <button type="submit" id="login-btn"
+                            class="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--primary-color)] px-4 py-3 text-sm font-medium text-white transition-all duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                            <span id="login-btn-text">Sign In</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Alternative Access -->
+                <div class="text-center mt-6 pt-6 border-t border-gray-200">
+                    <!-- Powered By Section -->
+                    <div class="register-prompt">
+                        <span class="text-gray-600 text-sm">Powered by <b>Victoria Enterprises LLC</b>,
+                            UAE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================
+        // ⚙️ 1. CONFIGURATION & CONSTANTS
+        // ================================
+
+        // Start each visit with a clean browser storage state.
+        localStorage.clear();
+
+        // API Configuration
+        const DomainName = "https://taskserver.bhuvansystems.in";
+        const SESSION_STORAGE_KEYS = [
+            'TokenNo',
+            'GeneralConfigList',
+            'MinuList',
+            'MenuSection',
+            'MenuProduct',
+            'LogUser',
+            'SubscID',
+            'Branch',
+            'ActiveTime'
+        ];
+        localStorage.setItem("Domain", DomainName);
+
+        // Utility: Simple cookie setter
+        function setCookie(name, value, days) {
+            const d = new Date();
+            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + d.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/";
+        }
+
+        // Clear only login-owned keys so unrelated app data survives refreshes.
+        function resetSessionStorage() {
+            SESSION_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+            localStorage.removeItem('TasksMinuList');
+        }
+
+        // Keep storage writes consistent for API payloads.
+        function storeJson(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // ================================
+        // 🛠️ 2. CORE UTILITIES
+        // ================================
+
+        // Keep alerts centralized for login failures.
+        function showErrorAlert(message) {
+            alert(message);
+        }
+
+        // Keep validation fast and focus the first invalid field.
+        function validateLoginForm(usernameInput, passwordInput) {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username.trim()) {
+                showErrorAlert('Please enter a valid username');
+                usernameInput.focus();
+                return false;
+            }
+            if (!password) {
+                showErrorAlert('Please enter a valid password');
+                passwordInput.focus();
+                return false;
+            }
+            return true;
+        }
+
+        // ================================
+        // 🔐 3. AUTHENTICATION & LOGIN
+        // ================================
+
+        function initializeLoginForm() {
+            const toggleBtn = document.getElementById('toggle-password');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const rememberField = document.getElementById('remember-me');
+            const loginForm = document.getElementById('login-form');
+            const loginBtn = document.getElementById('login-btn');
+
+            // Flip the password field without re-rendering the form.
+            toggleBtn?.addEventListener('click', function () {
+                const isPassword = passwordInput.type === 'password';
+                passwordInput.type = isPassword ? 'text' : 'password';
+                this.querySelector('i').className = `bi bi-eye${isPassword ? '-slash' : ''}`;
+            });
+
+            function resetLoginUi() {
+                loginBtn.disabled = false;
+                loginBtn.style.opacity = '';
+                loginBtn.style.cursor = '';
+                const label = loginBtn.querySelector('#login-btn-text');
+                if (label) label.textContent = 'Sign In';
+                if (window.LoadingOverlay) {
+                    window.LoadingOverlay.hide({ fast: true });
+                }
+            }
+
+            function handleLoginFailure(message) {
+                showErrorAlert(message);
+                resetLoginUi();
+            }
+
+            loginForm?.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                if (!validateLoginForm(usernameInput, passwordInput)) return;
+
+                resetSessionStorage();
+
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+
+                loginBtn.disabled = true;
+                loginBtn.style.opacity = '0.85';
+                loginBtn.style.cursor = 'not-allowed';
+                const btnLabel = loginBtn.querySelector('#login-btn-text');
+                if (btnLabel) btnLabel.textContent = 'Signing In…';
+
+                if (window.LoadingOverlay) {
+                    window.LoadingOverlay.show({
+                        title: 'Signing in…',
+                        skipExit: true
+                    });
+                }
+
+                const loginid = username; // Map username to loginid for API
+                const pw = password;
+                const mSubscID = 1020;
+
+                // Step 1: Login (GET with query parameters)
+                $.ajax({
+                    url: DomainName + `/api/Home/login`,
+                    type: "GET",
+                    data: { loginid, pw },
+                    success: function (result) {
+                        var Saveresult = (typeof result === 'string') ? result.split(",") : [];
+
+                        if (Saveresult[0] === "Error") {
+                            handleLoginFailure(Saveresult[2] || "Login failed");
+                            return;
+                        }
+
+                        // Persist token (both localStorage and cookies)
+                        localStorage.setItem('TokenNo', Saveresult[1]);
+                        var UserNo = Number(Saveresult[2]);
+                        setCookie("UserNo", UserNo, 1);
+                        setCookie("TokenNo", Saveresult[1], 1);
+
+                        // Initialize MinuList in localStorage as a clean empty array on login
+                        storeJson('MinuList', []);
+
+                        const fetchMenuSection = $.ajax({
+                            type: "GET",
+                            url: DomainName + "/api/Home/GetMenuSection",
+                            data: { UserNo: UserNo, dept: "Inventory" },
+                            success: function (data) {
+                                storeJson('MenuSection', data);
+                            }
+                        });
+
+                        const fetchMenuProduct = $.ajax({
+                            type: "GET",
+                            url: DomainName + "/api/Home/GetMenuProduct",
+                            data: { UserNo: UserNo },
+                            success: function (data) {
+                                storeJson('MenuProduct', data);
+                            }
+                        });
+
+                        const fetchUserData = $.ajax({
+                            type: "GET",
+                            url: DomainName + "/api/UserMaster/api/GetData/" + UserNo,
+                            success: function (data) {
+                                storeJson('LogUser', data);
+                            }
+                        });
+
+                        // Wait for user data first so GeneralConfig is fetched once with the real SubscID.
+                        $.when(fetchUserData, fetchMenuSection, fetchMenuProduct)
+                            .done(function () {
+                                try {
+                                    const logUserRaw = localStorage.getItem("LogUser");
+                                    let configSubscID = mSubscID;
+                                    let targetUrl = './Modules/Tasks/MyDashboard.html'; // Default to MyDashboard for non-admins
+
+                                    if (logUserRaw) {
+                                        const logUser = JSON.parse(logUserRaw);
+                                        let subscID = Array.isArray(logUser) ? logUser[0]?.subscID : logUser?.subscID;
+                                        let branch = Array.isArray(logUser) ? logUser[0]?.branch : logUser?.branch;
+
+                                        if (subscID) localStorage.setItem("SubscID", subscID);
+                                        if (branch) localStorage.setItem("Branch", branch);
+                                        if (subscID) configSubscID = subscID;
+
+                                        // Check user type / designation for administrator role
+                                        const u = Array.isArray(logUser) ? logUser[0] : logUser;
+                                        if (u) {
+                                            const ut = String(u.userType || '').trim().toLowerCase();
+                                            const des = String(u.designation || '').trim().toLowerCase();
+                                            const role = String(u.role || u.Role || '').trim().toLowerCase();
+                                            if (ut.indexOf('admin') !== -1 || des.indexOf('admin') !== -1 || role.indexOf('admin') !== -1) {
+                                                targetUrl = './Modules/Tasks/Dashboard.html'; // Admin goes to Overview Dashboard
+                                            }
+                                        }
+                                    }
+
+                                    $.ajax({
+                                        type: "GET",
+                                        url: DomainName + "/api/GeneralConfig/api/GetData/list",
+                                        data: { SubscID: configSubscID },
+                                        success: function (data) {
+                                            storeJson('GeneralConfigList', data);
+                                        },
+                                        error: function () {
+                                            console.warn('Unable to load configuration for this account. Proceeding without it.');
+                                        }
+                                    }).always(function () {
+                                        localStorage.setItem('ActiveTime', new Date());
+                                        if (window.LoadingOverlay && typeof window.LoadingOverlay.startPageTransition === 'function') {
+                                            window.LoadingOverlay.startPageTransition(targetUrl, {
+                                                title: 'Loading Dashboard…',
+                                                duration: 0.55
+                                            });
+                                        } else {
+                                            window.location.assign(targetUrl);
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.warn('Post-login data extraction failed:', e);
+                                    handleLoginFailure('Unable to prepare your account data. Please try again.');
+                                }
+                            })
+                            .fail(function () {
+                                handleLoginFailure('One or more post-login requests failed. Please try again.');
+                            });
+                    },
+                    error: function () {
+                        handleLoginFailure('Login request failed. Please check your network and try again.');
+                    }
+                });
+            });
+
+            // Restore shared fields from query params on first load.
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('username')) usernameInput.value = decodeURIComponent(params.get('username'));
+            if (params.get('password')) passwordInput.value = decodeURIComponent(params.get('password'));
+            if (params.get('remember-me')) rememberField.checked = true;
+        }
+
+        // ================================
+        // 🎯 4. APPLICATION STARTUP
+        // ================================
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('🔐 Workspace login page loaded');
+
+            initializeLoginForm();
+        });
+
+        /**
+ * Generate Browser Fingerprint
+ * Returns a SHA-256 hash string
+ */
+        async function generateBrowserFingerprint() {
+
+            // ---------- Canvas Fingerprint ----------
+            function getCanvasFingerprint() {
+                try {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+
+                    ctx.textBaseline = "top";
+                    ctx.font = "16px Arial";
+                    ctx.fillStyle = "#f60";
+                    ctx.fillRect(100, 1, 62, 20);
+
+                    ctx.fillStyle = "#069";
+                    ctx.fillText("Bhuvan Systems ERP 🚀", 2, 15);
+
+                    return canvas.toDataURL();
+                } catch {
+                    return "";
+                }
+            }
+
+            // ---------- WebGL Fingerprint ----------
+            function getWebGLFingerprint() {
+                try {
+                    const canvas = document.createElement("canvas");
+                    const gl =
+                        canvas.getContext("webgl") ||
+                        canvas.getContext("experimental-webgl");
+
+                    if (!gl) return "";
+
+                    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+
+                    return JSON.stringify({
+                        vendor: debugInfo
+                            ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
+                            : gl.getParameter(gl.VENDOR),
+
+                        renderer: debugInfo
+                            ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                            : gl.getParameter(gl.RENDERER),
+
+                        version: gl.getParameter(gl.VERSION),
+
+                        shadingLanguageVersion:
+                            gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
+                    });
+                } catch {
+                    return "";
+                }
+            }
+
+            // ---------- Audio Fingerprint ----------
+            async function getAudioFingerprint() {
+                try {
+                    const AudioContext =
+                        window.OfflineAudioContext ||
+                        window.webkitOfflineAudioContext;
+
+                    if (!AudioContext)
+                        return "";
+
+                    const context = new AudioContext(1, 44100, 44100);
+
+                    const oscillator = context.createOscillator();
+                    oscillator.type = "triangle";
+                    oscillator.frequency.value = 10000;
+
+                    const compressor = context.createDynamicsCompressor();
+
+                    oscillator.connect(compressor);
+                    compressor.connect(context.destination);
+
+                    oscillator.start(0);
+
+                    const buffer = await context.startRendering();
+
+                    let hash = 0;
+
+                    const data = buffer.getChannelData(0);
+
+                    for (let i = 0; i < data.length; i += 100) {
+                        hash += Math.abs(data[i]);
+                    }
+
+                    return hash.toString();
+                }
+                catch {
+                    return "";
+                }
+            }
+
+            // ---------- Collect Browser Data ----------
+            const fingerprint = {
+                userAgent: navigator.userAgent,
+                language: navigator.language,
+                languages: navigator.languages.join(","),
+
+                timezone:
+                    Intl.DateTimeFormat().resolvedOptions().timeZone,
+
+                platform: navigator.platform,
+
+                hardwareConcurrency:
+                    navigator.hardwareConcurrency || "",
+
+                deviceMemory:
+                    navigator.deviceMemory || "",
+
+                screenResolution:
+                    `${screen.width}x${screen.height}`,
+
+                availResolution:
+                    `${screen.availWidth}x${screen.availHeight}`,
+
+                colorDepth:
+                    screen.colorDepth,
+
+                pixelRatio:
+                    window.devicePixelRatio,
+
+                touchPoints:
+                    navigator.maxTouchPoints,
+
+                cookieEnabled:
+                    navigator.cookieEnabled,
+
+                doNotTrack:
+                    navigator.doNotTrack,
+
+                canvas:
+                    getCanvasFingerprint(),
+
+                webgl:
+                    getWebGLFingerprint(),
+
+                audio:
+                    await getAudioFingerprint()
+            };
+
+            // ---------- Convert to JSON ----------
+            const text = JSON.stringify(fingerprint);
+
+            // ---------- SHA256 ----------
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+
+            const hashBuffer = await crypto.subtle.digest(
+                "SHA-256",
+                data
+            );
+
+            const hashArray = Array.from(
+                new Uint8Array(hashBuffer)
+            );
+
+            const hash = hashArray
+                .map(b => b.toString(16).padStart(2, "0"))
+                .join("");
+
+            return {
+                fingerprint: hash,
+                raw: fingerprint
+            };
+        }
+
+        (async () => {
+
+            const result = await generateBrowserFingerprint();
+
+            console.log(result.fingerprint);
+
+            console.log(result.raw);
+
+        })();
+    </script>
+</body>
+
+</html>

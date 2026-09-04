@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>New Task Management</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Tailwind CSS (Using local CDN path as per project standard) -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+
+    <!-- Bootstrap Icons (Required by navigation for icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <!-- GSAP for animations (Required by navigation.js) -->
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+
+    <!-- jQuery -->
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Navigation Component Script -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+
+    <!-- KPI Manager Script -->
+    <script src="../../UI_Components/widgets/kpi-manager.js"></script>
+
+    <!-- AG Grid -->
+    <script src="../../Config/cdn/ag-grid-community.min.js"></script>
+
+    <!-- Select2 -->
+    <link href="../../Config/cdn/select2.min.css" rel="stylesheet" />
+    <script src="../../Config/cdn/select2.full.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="../../Config/cdn/sweetalert2_11.js"></script>
+
+    <!-- UI Button Component -->
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+
+    <!-- Premium Input Styles -->
+    <script src="../../UI_Components/modals/components/input-field.js"></script>
+
+    <!-- Premium Select2 Component -->
+    <script src="../../UI_Components/modals/components/select2-field.js"></script>
+
+    <!-- Popup Modal Component -->
+    <script src="../../UI_Components/modals/popup-modal.js"></script>
+
+    <!-- Data Grid Component -->
+    <script src="../../UI_Components/layout/data-grid.js"></script>
+
+    <!-- Modal Grid Component -->
+    <script src="../../UI_Components/modals/components/modal-grid.js"></script>
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SHELL (Standard layout containers for navigation) -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <div class="h-full w-full flex relative">
+        <!-- 1. Sidebar Container: Hosts the vertical navigation menu on desktop screens -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- 2. Top Navigation Container: Hosts the top header bar with user profile, breadcrumbs, etc. -->
+            <div id="top-nav-container"></div>
+
+            <!-- 3. Main Content Canvas: The primary scrollable area for page content -->
+            <main id="main-canvas" class="relative flex-1 bg-gray-50/40 overflow-y-auto flex flex-col">
+                <!-- Tabs Row -->
+                <div class="px-6 bg-white border-b border-gray-200">
+                    <div class="flex gap-6 overflow-x-auto no-scrollbar" id="frequency-tabs" role="tablist">
+                        <button type="button" data-freq-tab="all"
+                            class="py-3 text-sm font-semibold border-b-2 border-secondary-500 text-secondary-500 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">All</button>
+                        <button type="button" data-freq-tab="particular"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">One-time</button>
+                        <button type="button" data-freq-tab="daily"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Daily</button>
+                        <button type="button" data-freq-tab="weekly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Weekly</button>
+                        <button type="button" data-freq-tab="monthly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Monthly</button>
+                        <button type="button" data-freq-tab="quarterly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Quarterly</button>
+                        <button type="button" data-freq-tab="yearly"
+                            class="py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 transition-all duration-200 focus:outline-none whitespace-nowrap flex-shrink-0">Yearly</button>
+                    </div>
+                </div>
+
+                <!-- 4. KPI Manager: Custom component displaying key performance indicators at the top -->
+                <premium-kpi-manager id="kpiManager"></premium-kpi-manager>
+
+                <!-- 5. Premium Grid: Custom data grid component for listing tasks -->
+                <premium-grid id="task-grid" class="w-full flex-1 min-h-0 mb-4 sm:mb-0" data-show-sino="true"
+                    data-show-actions="true" data-row-id-field="mTransNo" data-pagination="true"
+                    data-pagination-page-size="15" data-pagination-page-size-selector="[5, 10, 15, 20, 50]"
+                    data-floating-filter="false" data-row-height="40" data-auto-fill-height="true" data-min-height="200"
+                    data-suppress-size-to-fit="false" data-action-view="viewRecord" data-action-edit="editRecord"
+                    data-action-delete="deleteRecord">
+                    <!-- Declare our custom UI Button right here in the HTML! -->
+                    <div slot="actions" class="flex items-center gap-3">
+                        <premium-button id="add-task-btn" icon="bi-plus-circle" label="Add Task" variant="solid"
+                            bg-color="bg-white" border-color="border-gray-300" text-color="text-black"></premium-button>
+                    </div>
+                </premium-grid>
+
+                <!-- 6. Popup Modal: Custom popup modal component for adding/editing a task -->
+                <premium-popup-modal id="task-modal" data-width="750px" data-max-width="95%" data-height="600px">
+                    <template data-modal-body>
+                        <form id="task-form" class="space-y-4" onsubmit="return false;">
+                            <input type="hidden" id="task-id" value="0">
+
+                            <!-- Company Selection -->
+                            <div class="space-y-1">
+                                <label data-premium-label>Company *</label>
+                                <select id="task-company" class="w-full" data-premium-input required></select>
+                            </div>
+
+                            <!-- Assignment Type & Resent Task -->
+                            <div class="flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <label data-premium-label>Assignment Type *</label>
+                                    <div class="flex items-center gap-6 mt-1">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="assignmentType" value="individual" checked
+                                                class="w-4 h-4 text-secondary-600 border-gray-300 focus:ring-secondary-500">
+                                            <span class="text-sm font-medium text-gray-700">Individual</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" name="assignmentType" value="group"
+                                                class="w-4 h-4 text-secondary-600 border-gray-300 focus:ring-secondary-500">
+                                            <span class="text-sm font-medium text-gray-700">Group</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <premium-button id="resent-task-btn" icon="bi-fast-forward-circle" label="Resent Task"
+                                    variant="outline" bg-color="bg-white" text-color="text-gray-700"
+                                    border-color="border-gray-300"></premium-button>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <!-- Assignee Selection -->
+                                <div class="space-y-1">
+                                    <label id="assignment-select-label" data-premium-label>Select Employee *</label>
+                                    <select id="task-assignee" class="w-full" data-premium-input required></select>
+                                </div>
+
+                                <!-- Task Name -->
+                                <div class="space-y-1">
+                                    <label data-premium-label>Task Name *</label>
+                                    <input type="text" id="task-name" data-premium-input placeholder="Enter task name"
+                                        required>
+                                </div>
+                            </div>
+                            <!-- Description -->
+                            <div class="space-y-1">
+                                <label data-premium-label>Task Description *</label>
+                                <textarea id="task-description" data-premium-input rows="3"
+                                    placeholder="Describe the task details..." required></textarea>
+                            </div>
+                            <div id="group-members-container" class="grid grid-cols-1 space-y-1 hidden">
+                                <label data-premium-label>Group Members</label>
+                                <textarea id="group-members-list" data-premium-input rows="2" readonly
+                                    class="bg-gray-50 resize-none text-sm"></textarea>
+                            </div>
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div class="space-y-1">
+                                    <label data-premium-label>Priority *</label>
+                                    <select id="task-priority" class="w-full" data-premium-input required>
+                                        <option value="High">High</option>
+                                        <option value="Medium" selected>Medium</option>
+                                        <option value="Low">Low</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label data-premium-label>Task Assign Type *</label>
+                                    <select id="task-frequency" class="w-full" data-premium-input required>
+                                        <option value="particular" selected>One-time</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="quarterly">Quarterly</option>
+                                        <option value="yearly">Yearly</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Scheduling Inputs -->
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mt-4">
+                                <!-- 1. Start Date -->
+                                <div id="panel-start-date" class="space-y-1">
+                                    <label data-premium-label>Start Date *</label>
+                                    <input type="date" id="task-start-date" data-premium-input required>
+                                </div>
+
+                                <!-- 2. Due Date -->
+                                <div id="panel-due-date" class="space-y-1">
+                                    <label data-premium-label>Due Date *</label>
+                                    <input type="date" id="task-due-date" data-premium-input required>
+                                </div>
+
+                                <!-- 3. Due Time -->
+                                <div class="space-y-1">
+                                    <label data-premium-label>Due Time *</label>
+                                    <input type="time" id="task-due-time" data-premium-input required>
+                                </div>
+                            </div>
+                        </form>
+                    </template>
+                </premium-popup-modal>
+
+                <!-- Resent Tasks Popup Modal -->
+                <premium-popup-modal id="resent-task-modal" data-width="800px" data-max-width="95%" data-height="400px">
+                    <template data-modal-body>
+                        <div class="w-full">
+                            <premium-modal-grid id="resent-task-grid" class="w-full h-full" data-show-sino="true"
+                                data-show-actions="false" data-suppress-size-to-fit="false" data-row-height="40"
+                                data-min-height="200"></premium-modal-grid>
+                        </div>
+                    </template>
+                </premium-popup-modal>
+            </main>
+        </div>
+    </div>
+
+    <!-- 8. Mobile Bottom Navigation: Replaces sidebar on small mobile screens -->
+    <div id="bottom-nav-container"></div>
+
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ In-Memory Offline Mock CRUD Engine                               ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║ New Task Management                                              ║
+        // ║ NewDesign Type-1 module using AccountMaster-style structure.     ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        //
+        //  SECTIONS:  1-CONSTANTS  2-STATE  3-DATA  4-UI HELPERS
+        //             5-FEATURE LOGIC  6-COMPONENTS  7-EVENTS  8-INIT
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 1 — CONSTANTS & SESSION
+        // ─────────────────────────────────────────────────────────────────
+        if (!JSON.parse(localStorage.getItem('LogUser'))) {
+            window.location.href = '/Index.html';
+        }
+
+        var _logUser = JSON.parse(localStorage.getItem('LogUser'));
+        var DomainName = (localStorage.getItem('Domain') || '').trim().replace(/\/+$/, '');
+        var mSubscID = _logUser.subscID;
+        var UserNo = Number(_logUser.mTransNo);
+        var mUserType = _logUser.userType;
+        var Designation = _logUser.designation;
+        var LinkNo = _logUser.linkNo;
+        var mBranch = localStorage.getItem('Branch');
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 2 — STATE
+        // ─────────────────────────────────────────────────────────────────
+        var taskGridApi = null;
+        var selectedFreqTab = 'all';
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 3 — DATA
+        // ─────────────────────────────────────────────────────────────────
+        var dummyEmployees = [];
+
+        var dummyGroups = [];
+
+        var dummyCompanies = [];
+
+        var mockTaskList = [];
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 4 — UI HELPERS
+        // ─────────────────────────────────────────────────────────────────
+        function formatDateDisplay(ymd) {
+            var s = $.trim(String(ymd || '')).slice(0, 10);
+            if (!s) return '—';
+            var p = s.split('-');
+            if (p.length !== 3) return s;
+            return p[2] + '-' + p[1] + '-' + p[0];
+        }
+        var employeeCache = null;
+        var groupCache = null;
+
+        function refreshAssigneeSelectOptions(type) {
+            var $select = $('#task-assignee');
+            var label = document.getElementById('assignment-select-label');
+            var companyId = $('#task-company').val();
+            var modal = document.getElementById('task-modal');
+
+            if (label) {
+                label.innerText = type === 'group' ? 'Select Group *' : 'Select Employee *';
+            }
+
+            $select.empty();
+
+            if (!companyId) {
+                PremiumSelect2.init($select[0], {
+                    placeholder: 'Select Company First...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false,
+                    options: []
+                });
+                return;
+            }
+
+            PremiumSelect2.init($select[0], {
+                placeholder: 'Loading...',
+                dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                allowClear: false,
+                options: []
+            });
+
+            var domain = (typeof localStorage !== 'undefined' ? localStorage.getItem('Domain') : '') || '';
+            var compLower = $.trim(companyId).toLowerCase();
+
+            if (type === 'individual') {
+                var loadUsers = function (data) {
+                    var filtered = [];
+                    $.each(data, function (i, row) {
+                        var c = $.trim(row.oprCompany || row.branch || row.company || '').toLowerCase();
+                        var isActive = (row.lockStatus === 'Y'); // Only include active users
+                        // Include if active AND company matches selected company OR belongs to "All Company"
+                        if (isActive && (c === compLower || c === 'all company' || c === 'allcompany' || c === 'all')) {
+                            filtered.push({
+                                id: row.mTransNo || row.id || row.userNo,
+                                text: row.userName || row.firstName || row.name || row.text || ('User ' + row.mTransNo)
+                            });
+                        }
+                    });
+
+                    $select.empty();
+                    PremiumSelect2.init($select[0], {
+                        placeholder: 'Select Employee...',
+                        dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                        allowClear: false,
+                        options: filtered
+                    });
+                };
+
+                if (employeeCache) {
+                    loadUsers(employeeCache);
+                } else {
+                    $.get(domain + '/api/UserMaster/api/GetData/List?SubscID=' + (typeof mSubscID !== 'undefined' ? mSubscID : 0), function (res) {
+                        employeeCache = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                        loadUsers(employeeCache);
+                    });
+                }
+
+            } else {
+                var loadGroups = function (data) {
+                    var filtered = [];
+                    $.each(data, function (i, row) {
+                        var c = $.trim(row.company || row.grpCompany || row.GrpCompany || row.groupCompany || '').toLowerCase();
+                        // Include if company matches selected company OR if it belongs to "All Company"
+                        if (c === compLower || c === 'all company' || c === 'allcompany' || c === 'all') {
+                            filtered.push({
+                                id: row.mTransNo || row.MTransNo || row.id || row.Id || row.groupId,
+                                text: row.groupName || row.GroupName || row.name || row.text || ('Group ' + (row.mTransNo || row.id))
+                            });
+                        }
+                    });
+
+                    $select.empty();
+                    PremiumSelect2.init($select[0], {
+                        placeholder: 'Select Group...',
+                        dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                        allowClear: false,
+                        options: filtered
+                    });
+                };
+
+                if (groupCache) {
+                    loadGroups(groupCache);
+                } else {
+                    $.get(domain + '/api/TaskGroup/GetData/' + (typeof mSubscID !== 'undefined' ? mSubscID : 0), function (res) {
+                        groupCache = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                        loadGroups(groupCache);
+                    });
+                }
+            }
+        }
+
+        window.toggleFrequencyPanels = function (freq) {
+            document.getElementById('panel-due-date').classList.remove('hidden');
+            document.getElementById('panel-start-date').classList.remove('hidden');
+
+            var dueTimeLabel = document.getElementById('due-time-label');
+            if (dueTimeLabel) {
+                dueTimeLabel.innerText = freq === 'daily' ? 'Due Time (daily) *' : 'Due Time *';
+            }
+
+            document.getElementById('task-due-date').required = true;
+            document.getElementById('task-start-date').required = true;
+        };
+
+        function populateModalFields(data) {
+            document.getElementById('task-id').value = data.mTransNo || '0';
+            document.getElementById('task-name').value = data.taskName || '';
+
+            $('#task-priority').val(data.priority || 'Medium').trigger('change');
+
+            var statusEl = document.getElementById('task-status');
+            if (statusEl) {
+                $(statusEl).val(data.status || 'Open').trigger('change');
+            }
+
+            document.getElementById('task-description').value = data.description || '';
+
+            // Recover Company ID from assignee if missing
+            var resolvedCompany = data.companyId || '';
+            if (!resolvedCompany && data.assigneeId) {
+                if (data.assignmentType === 'group') {
+                    if (groupCache) {
+                        var g = groupCache.find(function (x) {
+                            var id = x.mTransNo || x.id || x.groupId || x.MTransNo;
+                            return String(id) === String(data.assigneeId);
+                        });
+                        if (g) {
+                            resolvedCompany = g.company || g.grpCompany || g.GrpCompany || g.groupCompany || '';
+                        }
+                    }
+                } else {
+                    if (employeeCache) {
+                        var u = employeeCache.find(function (x) {
+                            var id = x.mTransNo || x.id || x.userNo;
+                            return String(id) === String(data.assigneeId);
+                        });
+                        if (u) {
+                            resolvedCompany = u.oprCompany || u.branch || u.company || '';
+                        }
+                    }
+                }
+            }
+
+            var $compSelect = $('#task-company');
+            if (resolvedCompany) {
+                if (!$compSelect.find("option[value='" + resolvedCompany + "']").length) {
+                    var newCompOpt = new Option(resolvedCompany, resolvedCompany, true, true);
+                    $compSelect.append(newCompOpt).trigger('change');
+                } else {
+                    $compSelect.val(resolvedCompany).trigger('change');
+                }
+            } else {
+                $compSelect.val('').trigger('change');
+            }
+
+            var radioSelector = 'input[name="assignmentType"][value="' + (data.assignmentType || 'individual') + '"]';
+            var radioEl = document.querySelector(radioSelector);
+            if (radioEl) {
+                radioEl.checked = true;
+            }
+
+            refreshAssigneeSelectOptions(data.assignmentType || 'individual');
+
+            var $assigneeSelect = $('#task-assignee');
+            if (data.assigneeId) {
+                if (!$assigneeSelect.find("option[value='" + data.assigneeId + "']").length) {
+                    var newAssigneeOpt = new Option(data.assignmentLabel || 'Assignee', data.assigneeId, true, true);
+                    $assigneeSelect.append(newAssigneeOpt).trigger('change');
+                } else {
+                    $assigneeSelect.val(data.assigneeId).trigger('change');
+                }
+            } else {
+                $assigneeSelect.val('').trigger('change');
+            }
+
+            var freq = data.frequency || 'particular';
+            $('#task-frequency').val(freq).trigger('change');
+
+            document.getElementById('task-start-date').value = data.taskDate || data.duedate || '';
+            document.getElementById('task-due-date').value = data.duedate || '';
+            document.getElementById('task-due-time').value = data.dueTime || '';
+
+            toggleFrequencyPanels(freq);
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 5 — FEATURE LOGIC
+        // ─────────────────────────────────────────────────────────────────
+        window.updateDashboardKPIs = function () {
+            var kpi = document.getElementById('kpiManager');
+            if (!kpi) return;
+
+            var total = mockTaskList.length;
+            var high = mockTaskList.filter(t => t.priority === 'High').length;
+            var completed = mockTaskList.filter(t => t.status === 'Completed' || t.status === 'Complete').length;
+
+            var todayStr = new Date().toISOString().split('T')[0];
+            var overdue = mockTaskList.filter(t => t.status !== 'Completed' && t.status !== 'Complete' && t.duedate < todayStr).length;
+
+            kpi.setCards([
+                { id: 'total_tasks', label: 'Total Tasks', value: String(total), icon: 'bi-collection' },
+                { id: 'high_priority', label: 'High Priority', value: String(high), icon: 'bi-exclamation-octagon' },
+                { id: 'overdue_tasks', label: 'Overdue Tasks', value: String(overdue), icon: 'bi-exclamation-triangle' },
+                { id: 'completed_tasks', label: 'Completed Tasks', value: String(completed), icon: 'bi-check-circle' }
+            ]);
+        };
+
+        var tasksLoaded = false;
+        function loadTasksFromApi(done) {
+            var domain = DomainName || '';
+            if (!domain) {
+                if (done) done();
+                return;
+            }
+            var grid = document.getElementById('task-grid');
+            if (grid && typeof grid.setLoading === 'function') grid.setLoading(true, 'Loading tasks...');
+
+            $.ajax({
+                url: domain + '/api/Task/TaskDataSender?userNo=' + encodeURIComponent(UserNo),
+                method: 'GET',
+                success: function (json) {
+                    var raw = Array.isArray(json) ? json : (json.data || json.Data || json.result || []);
+                    mockTaskList = raw.map(function (row) {
+                        var dateOnly = function (value) {
+                            if (!value) return '';
+                            var s = String(value);
+                            var t = s.indexOf('T');
+                            return t >= 0 ? s.slice(0, 10) : s.slice(0, 10);
+                        };
+                        var assignToNo = row.assignto != null ? row.assignto
+                            : row.assignTo != null ? row.assignTo
+                                : row.Assignto != null ? row.Assignto
+                                    : row.assignUserNo != null ? row.assignUserNo
+                                        : row.AssignUserNo != null ? row.AssignUserNo
+                                            : row.taskAssignUserNo != null ? row.taskAssignUserNo
+                                                : row.userAssignNo != null ? row.userAssignNo
+                                                    : null;
+                        var groupMetaId = row.groupTransNo != null && row.groupTransNo !== '' ? row.groupTransNo
+                            : row.GroupTransNo != null && row.GroupTransNo !== '' ? row.GroupTransNo
+                                : row.taskGroupId != null && row.taskGroupId !== '' ? row.taskGroupId
+                                    : row.TaskGroupId != null && row.TaskGroupId !== '' ? row.TaskGroupId
+                                        : row.groupMTransNo != null && row.groupMTransNo !== '' ? row.groupMTransNo
+                                            : null;
+
+                        var atype = (row.assignmentType === 'group' || row.AssignmentType === 'group') ? 'group' : 'individual';
+                        var assignTarget = assignToNo != null && assignToNo !== '' ? String(assignToNo) : '';
+                        if (atype === 'group' && groupMetaId != null && groupMetaId !== '') {
+                            assignTarget = String(groupMetaId);
+                        }
+
+                        // Assignee Name: map directly to row.assignName or row.AssignName
+                        var assignLabel = row.assignName || row.AssignName || '';
+
+                        var rawAssignType = (row.taskAssignType || row.frequency || 'particular').toString().toLowerCase().trim();
+                        var assignTypeStr = (rawAssignType === 'one-time' || rawAssignType === 'onetime') ? 'particular' : rawAssignType;
+                        var displayAssignType = assignTypeStr === 'particular' ? 'One-time' : (assignTypeStr.charAt(0).toUpperCase() + assignTypeStr.slice(1));
+
+                        return {
+                            id: row.mTransNo || row.id,
+                            mTransNo: row.mTransNo || row.id,
+                            taskName: row.taskName || row.TaskName || '',
+                            duedate: dateOnly(row.duedate != null ? row.duedate : row.duedate),
+                            assignmentType: atype,
+                            assigneeId: assignTarget,
+                            assignmentLabel: assignLabel,
+                            priority: row.taskPriority || row.TaskPriority || '',
+                            status: row.status || row.taskStatus || 'Open',
+                            frequency: assignTypeStr,
+                            dueTime: row.dueTime || row.DueTime || '',
+                            description: row.taskDescription || row.TaskDescription || '',
+                            taskDate: dateOnly(row.taskDate != null ? row.taskDate : row.TaskDate),
+                            taskAssignType: displayAssignType,
+                            groupMetaId: groupMetaId,
+                            rawTaskAssignType: row.taskAssignType || row.TaskAssignType || ''
+                        };
+                    });
+
+                    mockTaskList = dedupeAndResolveGroupTasks(mockTaskList);
+
+                    if (grid && typeof grid.setLoading === 'function') grid.setLoading(false);
+                    if (done) done();
+                },
+                error: function (xhr) {
+                    console.warn('Task list error', xhr);
+                    mockTaskList = [];
+                    if (grid && typeof grid.setLoading === 'function') grid.setLoading(false);
+                    if (done) done();
+                }
+            });
+        }
+
+        function dedupeAndResolveGroupTasks(taskList) {
+            var grouped = {};
+            $.each(taskList, function (i, t) {
+                var mNo = String(t.mTransNo);
+                if (!grouped[mNo]) {
+                    grouped[mNo] = [];
+                }
+                grouped[mNo].push(t);
+            });
+
+            var result = [];
+            var frequencies = ['particular', 'one-time', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+
+            $.each(grouped, function (mNo, rows) {
+                var first = rows[0];
+                if (rows.length > 1) {
+                    var gName = 'Group Task';
+                    var gId = '';
+                    $.each(rows, function (j, r) {
+                        if (r.groupMetaId) {
+                            gId = r.groupMetaId;
+                            return false;
+                        }
+                    });
+
+                    if (gId && groupCache) {
+                        var gObj = groupCache.find(function (g) {
+                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                            return String(id) === String(gId);
+                        });
+                        if (gObj) {
+                            gName = gObj.groupName || gObj.name || gName;
+                        }
+                    } else if (first.rawTaskAssignType && frequencies.indexOf(first.rawTaskAssignType.toLowerCase()) === -1) {
+                        gName = first.rawTaskAssignType;
+                    }
+
+                    // Try to resolve group by matching member IDs against groupCache
+                    if (gName === 'Group Task' && groupCache) {
+                        var assigneeIds = rows.map(function (r) { return String(r.assigneeId); }).filter(Boolean).sort().join(',');
+                        var foundGroup = groupCache.find(function (g) {
+                            var team = String(g.groupTeam || '').split(',').map(function (s) { return $.trim(s); }).filter(Boolean).sort().join(',');
+                            return team && team === assigneeIds;
+                        });
+                        if (foundGroup) {
+                            gName = foundGroup.groupName || foundGroup.name || gName;
+                        }
+                    }
+
+                    first.assignmentLabel = gName;
+                    first.assignmentType = 'group';
+                } else {
+                    if (first.groupMetaId && groupCache) {
+                        var gObj = groupCache.find(function (g) {
+                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                            return String(id) === String(first.groupMetaId);
+                        });
+                        if (gObj) {
+                            first.assignmentLabel = gObj.groupName || gObj.name || first.assignmentLabel;
+                            first.assignmentType = 'group';
+                        }
+                    }
+                }
+                result.push(first);
+            });
+            return result;
+        }
+
+        window.loadTasksIntoGrid = function (forceReload) {
+            var grid = document.getElementById('task-grid');
+            if (!grid) return;
+
+            var render = function () {
+                var filteredData = mockTaskList;
+                if (selectedFreqTab !== 'all') {
+                    filteredData = mockTaskList.filter(t => (t.frequency || 'particular') === selectedFreqTab);
+                }
+
+                // Sort by mTransNo descending to show latest tasks first
+                filteredData.sort(function (a, b) {
+                    return (b.mTransNo || 0) - (a.mTransNo || 0);
+                });
+
+                grid.setRowData(filteredData);
+                window.updateDashboardKPIs();
+            };
+
+            if (!tasksLoaded || forceReload) {
+                loadTasksFromApi(function () {
+                    tasksLoaded = true;
+                    render();
+                });
+            } else {
+                render();
+            }
+        };
+
+        window.viewRecord = function (rowId, rowData) {
+            var modal = document.getElementById('task-modal');
+            modal.open({
+                mode: 'view',
+                title: 'View Task Detail',
+                subtitle: 'Reviewing: ' + (rowData.taskName || '')
+            });
+
+            if (modal && typeof modal.setLoading === 'function') {
+                modal.setLoading(true, 'Fetching latest details...');
+            }
+
+            loadTasksFromApi(function () {
+                if (modal && typeof modal.setLoading === 'function') {
+                    modal.setLoading(false);
+                }
+                var latest = mockTaskList.find(t => String(t.mTransNo) === String(rowData.mTransNo));
+                populateModalFields(latest || rowData);
+            });
+        };
+
+        window.editRecord = function (rowId, rowData) {
+            var modal = document.getElementById('task-modal');
+            modal.open({
+                mode: 'edit',
+                title: 'Edit Task',
+                subtitle: 'Update details for: ' + (rowData.taskName || ''),
+                onSubmit: function () {
+                    var form = document.getElementById('task-form');
+                    if (form && !form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    var taskIdVal = Number(document.getElementById('task-id').value);
+                    var taskName = document.getElementById('task-name').value.trim();
+                    var taskDescription = document.getElementById('task-description').value.trim();
+                    var taskPriority = document.getElementById('task-priority').value;
+                    var calculatedStartDate = document.getElementById('task-start-date').value;
+                    var calculatedduedate = document.getElementById('task-due-date').value;
+                    var taskStatus = rowData.status || 'Open';
+                    var calculatedDueTime = document.getElementById('task-due-time').value;
+
+                    var freqEl = document.getElementById('task-frequency');
+                    var freqVal = freqEl ? freqEl.value : '';
+                    var freqLabel = freqEl && freqEl.options[freqEl.selectedIndex]
+                        ? freqEl.options[freqEl.selectedIndex].text
+                        : freqVal;
+
+                    var nowIso = new Date().toISOString();
+                    var taskDateIso = calculatedStartDate || new Date().toISOString().split('T')[0];
+                    var duedateIso = calculatedduedate || new Date().toISOString().split('T')[0];
+
+                    var editPayload = JSON.stringify({
+                        id: 0,
+                        mTransNo: taskIdVal,
+                        mCount: 0,
+                        taskName: taskName,
+                        taskDescription: taskDescription,
+                        taskDate: taskDateIso,
+                        taskTime: calculatedDueTime || '',
+                        duedate: duedateIso,
+                        dueTime: calculatedDueTime || '',
+                        taskPriority: taskPriority,
+                        taskAssignType: freqVal,
+                        systemIP: '1',
+                        lockStatus: 'Y',
+                        createdBy: UserNo,
+                        createdOn: nowIso,
+                        subscID: Number(mSubscID) || 0,
+                        taskStatus: taskStatus,
+                        status: 'UPDATE'
+                    });
+
+                    console.log("Edit Payload:", editPayload);
+
+                    $.ajax({
+                        url: DomainName + '/api/Task/api/SaveData',
+                        type: 'POST',
+                        contentType: 'application/json; charset=UTF-8',
+                        data: editPayload,
+                        success: function (res) {
+                            if (typeof res === 'string' && res.toLowerCase().indexOf('duplicate') !== -1) {
+                                Swal.fire({ title: 'Duplicate Detected', text: 'Duplicate record detected.', icon: 'warning', heightAuto: false });
+                                return;
+                            }
+                            if (res && res.message && String(res.message).toLowerCase().indexOf('duplicate') !== -1) {
+                                Swal.fire({ title: 'Duplicate Detected', text: 'Duplicate record detected.', icon: 'warning', heightAuto: false });
+                                return;
+                            }
+                            modal.close();
+                            Swal.fire({ title: 'Saved!', text: 'Task details updated successfully.', icon: 'success', heightAuto: false });
+                            tasksLoaded = false;
+                            window.loadTasksIntoGrid(true);
+                        },
+                        error: function (xhr) {
+                            var errText = (xhr.responseText || '').toLowerCase();
+                            if (errText.indexOf('duplicate') !== -1) {
+                                Swal.fire({ title: 'Duplicate Detected', text: 'Duplicate record detected.', icon: 'warning', heightAuto: false });
+                            } else {
+                                Swal.fire({ title: 'Save Failed', text: 'Could not update task (' + xhr.status + '). Please try again.', icon: 'error', heightAuto: false });
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (modal && typeof modal.setLoading === 'function') {
+                modal.setLoading(true, 'Fetching latest details...');
+            }
+
+            loadTasksFromApi(function () {
+                if (modal && typeof modal.setLoading === 'function') {
+                    modal.setLoading(false);
+                }
+                var latest = mockTaskList.find(t => String(t.mTransNo) === String(rowData.mTransNo));
+                populateModalFields(latest || rowData);
+            });
+        };
+
+        window.deleteRecord = function (rowId, rowData) {
+            var taskLabel = String(rowData.taskName || 'this task').trim() || 'this task';
+
+            Swal.fire({
+                title: 'Delete task "' + taskLabel.replace(/"/g, "'") + '"?',
+                text: 'Describe why this task is being removed (required):',
+                icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Reason for deletion...',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                heightAuto: false,
+                scrollbarPadding: false,
+                inputValidator: function (value) {
+                    if (!value || !$.trim(String(value))) return 'Please enter a reason for deletion.';
+                    return null;
+                }
+            }).then(function (result) {
+                if (!result.isConfirmed) return;
+
+                var taskId = rowData.mTransNo || rowId;
+                var reason = encodeURIComponent($.trim(result.value));
+
+                $.ajax({
+                    url: DomainName + '/api/Task/api/DeleteData/' + taskId + '?userNo=' + UserNo + '&reason=' + reason,
+                    method: 'DELETE',
+                    success: function () {
+                        $.ajax({
+                            url: DomainName + '/api/Task/api/DeleteDataDTL/' + taskId + '?userNo=' + UserNo,
+                            method: 'DELETE',
+                            success: function () {
+                                Swal.fire({ title: 'Deleted!', text: 'Task deleted successfully.', icon: 'success', confirmButtonColor: '#10b981', heightAuto: false });
+                                tasksLoaded = false;
+                                window.loadTasksIntoGrid(true);
+                            },
+                            error: function (xhr) {
+                                console.error('deleteRecord DTL error:', xhr);
+                                Swal.fire({ title: 'Warning', text: 'Task deleted, but some details could not be removed. (' + xhr.status + ')', icon: 'warning', heightAuto: false });
+                                tasksLoaded = false;
+                                window.loadTasksIntoGrid(true);
+                            }
+                        });
+                    },
+                    error: function (xhr) {
+                        console.error('deleteRecord error:', xhr);
+                        Swal.fire({ title: 'Error', text: 'Could not delete task. (' + xhr.status + ')', icon: 'error', heightAuto: false });
+                    }
+                });
+            });
+        };
+
+        window.handleResentForward = function (id) {
+            var source = mockTaskList.find(x => String(x.mTransNo) === String(id));
+            if (!source) return;
+
+            var resentModal = document.getElementById('resent-task-modal');
+            if (resentModal) {
+                resentModal.close();
+            }
+
+            document.getElementById('task-name').value = source.taskName || '';
+            document.getElementById('task-priority').value = source.priority || '';
+            document.getElementById('task-description').value = source.description || '';
+            $('#task-priority').trigger('change');
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Prefilled from resent task — select assignee and save',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        };
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 6 — COMPONENTS
+        // ─────────────────────────────────────────────────────────────────
+        function renderComponents() {
+            NavigationManager.init(undefined, { useMainNavRail: false });
+
+            var grid = document.getElementById('task-grid');
+            if (grid) {
+                grid.setOptions({
+                    columns: [
+                        { field: 'taskName', headerName: 'Task Name', flex: 2, minWidth: 220 },
+                        { field: 'assignmentLabel', headerName: 'Assignee / Group', flex: 1.5, minWidth: 180 },
+                        { field: 'taskAssignType', headerName: 'Assign Type', flex: 1.2, minWidth: 130 },
+                        {
+                            field: 'priority', headerName: 'Priority', flex: 1, minWidth: 100,
+                            cellRenderer: function (params) {
+                                var val = params.value || '';
+                                if (val === 'High') return '<span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">' + val + '</span>';
+                                if (val === 'Medium') return '<span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">' + val + '</span>';
+                                return '<span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">' + val + '</span>';
+                            }
+                        },
+                        {
+                            field: 'status', headerName: 'Status', flex: 1, minWidth: 120,
+                            cellRenderer: function (params) {
+                                var val = params.value || '';
+                                var lowerVal = val.toLowerCase();
+                                if (lowerVal === 'completed' || lowerVal === 'complete') {
+                                    return '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">' + val + '</span>';
+                                }
+                                if (lowerVal === 'in progress') {
+                                    return '<span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">' + val + '</span>';
+                                }
+                                if (lowerVal === 'pending') {
+                                    return '<span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">' + val + '</span>';
+                                }
+                                return '<span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">' + val + '</span>';
+                            }
+                        },
+                        { field: 'duedate', headerName: 'Due Date', flex: 1, minWidth: 120, valueFormatter: function (params) { return formatDateDisplay(params.value); } }
+                    ],
+                    rowData: []
+                });
+            }
+
+            window.loadTasksIntoGrid();
+        }
+
+        function initSelect2Fields() {
+            var assigneeEl = document.getElementById('task-assignee');
+            var companyEl = document.getElementById('task-company');
+            var modal = document.getElementById('task-modal');
+
+            if (companyEl && !$(companyEl).hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(companyEl, {
+                    placeholder: 'Select Company...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false,
+                    endpoint: '/api/OtherMasters/api/GetData/Load?MasterType=Company&SubscID=0',
+                    mapItem: function (x) {
+                        return { id: x.masterName || x.branchCode || x, text: x.masterName || x.branchName || x };
+                    }
+                });
+
+                $(companyEl).off('change.companyAssignee').on('change.companyAssignee', function () {
+                    var assignType = document.querySelector('input[name="assignmentType"]:checked');
+                    refreshAssigneeSelectOptions(assignType ? assignType.value : 'individual');
+                });
+            }
+
+            if (assigneeEl && !$(assigneeEl).hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(assigneeEl, {
+                    placeholder: 'Select...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false
+                });
+            }
+
+            var priorityEl = document.getElementById('task-priority');
+            if (priorityEl && !$(priorityEl).hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(priorityEl, {
+                    placeholder: 'Select Priority...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false
+                });
+            }
+
+            var statusEl = document.getElementById('task-status');
+            if (statusEl && !$(statusEl).hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(statusEl, {
+                    placeholder: 'Select Status...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false
+                });
+            }
+
+            var freqEl = document.getElementById('task-frequency');
+            if (freqEl && !$(freqEl).hasClass('select2-hidden-accessible')) {
+                PremiumSelect2.init(freqEl, {
+                    placeholder: 'Select Frequency...',
+                    dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                    allowClear: false
+                });
+                $(freqEl).on('change', function () {
+                    toggleFrequencyPanels(this.value);
+                });
+            }
+
+            var populateDays = function (selectId) {
+                var el = document.getElementById(selectId);
+                if (!el) return;
+                var $el = $(el);
+                $el.empty();
+                for (var i = 1; i <= 31; i++) {
+                    $el.append(new Option(i, i));
+                }
+            };
+
+            populateDays('monthly-day');
+            populateDays('quarterly-day');
+            populateDays('yearly-day');
+
+            var initSelect2Simple = function (selectId, placeholderStr) {
+                var el = document.getElementById(selectId);
+                if (el && !$(el).hasClass('select2-hidden-accessible')) {
+                    PremiumSelect2.init(el, {
+                        placeholder: placeholderStr,
+                        dropdownParent: PremiumSelect2.dropdownParentFromModal(modal),
+                        allowClear: false
+                    });
+                }
+            };
+
+            initSelect2Simple('monthly-day', 'Day...');
+            initSelect2Simple('quarterly-month', 'Month...');
+            initSelect2Simple('quarterly-day', 'Day...');
+            initSelect2Simple('yearly-month', 'Month...');
+            initSelect2Simple('yearly-day', 'Day...');
+        }
+
+        function renderResentTaskGrid() {
+            var grid = document.getElementById('resent-task-grid');
+            if (!grid) return;
+
+            grid.setOptions({
+                columns: [
+                    { field: 'taskName', headerName: 'Task Name', flex: 2, minWidth: 200 },
+                    { field: 'assignmentLabel', headerName: 'Assignee / Group', flex: 1.5, minWidth: 150 },
+                    { field: 'priority', headerName: 'Priority', flex: 1, minWidth: 100 },
+                    { field: 'duedate', headerName: 'Due Date', flex: 1, minWidth: 120, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
+                    {
+                        field: 'frequency',
+                        headerName: 'Frequency',
+                        width: 130,
+                        valueFormatter: function (params) {
+                            var val = params.value || 'particular';
+                            if (val === 'particular') return 'Particular Day';
+                            return val.charAt(0).toUpperCase() + val.slice(1);
+                        }
+                    },
+                    {
+                        headerName: 'Action',
+                        width: 100,
+                        maxWidth: 100,
+                        sortable: false,
+                        filter: false,
+                        cellRenderer: function (params) {
+                            var id = params && params.data ? params.data.mTransNo : '';
+                            return [
+                                '<div class="flex items-center justify-center h-full">',
+                                '  <button type="button" onclick="event.stopPropagation(); window.handleResentForward(\'', id, '\')"',
+                                '    class="text-gray-400 hover:text-secondary-600 transition-all duration-300" title="Forward">',
+                                '    <i class="bi bi-arrow-right-circle text-base"></i>',
+                                '  </button>',
+                                '</div>'
+                            ].join('');
+                        }
+                    }
+                ],
+                rowData: mockTaskList
+            });
+
+            grid.render();
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 7 — EVENTS
+        // ─────────────────────────────────────────────────────────────────
+
+        // 7.1 — Bind General Events
+        // Attach standard events for navigation clicks, toolbar handlers, and modal setups
+        function bindEvents() {
+            // Handle frequency filter tabs click
+            $(document).on('click', '[data-freq-tab]', function () {
+                var tab = $(this).attr('data-freq-tab');
+                selectedFreqTab = tab;
+
+                $('[data-freq-tab]').removeClass('border-secondary-500 text-secondary-500')
+                    .addClass('border-transparent text-gray-500 hover:text-gray-800');
+
+                $(this).removeClass('border-transparent text-gray-500 hover:text-gray-800')
+                    .addClass('border-secondary-500 text-secondary-500');
+
+                window.loadTasksIntoGrid();
+            });
+
+            $(document).on('change', 'input[name="assignmentType"]', function () {
+                refreshAssigneeSelectOptions(this.value);
+                $('#group-members-container').addClass('hidden');
+                $('#group-members-list').val('');
+            });
+
+            // Show group members when a group is selected
+            $(document).on('change', '#task-assignee', function () {
+                var assignType = document.querySelector('input[name="assignmentType"]:checked');
+                if (assignType && assignType.value === 'group') {
+                    var groupId = $(this).val();
+                    if (!groupId) {
+                        $('#group-members-container').addClass('hidden');
+                        return;
+                    }
+
+                    var group = null;
+                    if (groupCache) {
+                        group = groupCache.find(function (g) {
+                            var gId = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                            return String(gId) === String(groupId);
+                        });
+                    }
+
+                    if (group && group.groupTeam) {
+                        var memberIds = String(group.groupTeam).split(',').map(function (id) { return $.trim(id); }).filter(function (id) { return id; });
+                        var memberNames = [];
+
+                        $.each(memberIds, function (i, uid) {
+                            var userName = 'User ' + uid;
+                            if (employeeCache) {
+                                var userOpt = employeeCache.find(function (u) {
+                                    var uId = u.mTransNo || u.id || u.userNo;
+                                    return String(uId) === String(uid);
+                                });
+                                if (userOpt) {
+                                    userName = userOpt.userName || userOpt.firstName || userOpt.name || userOpt.text || userName;
+                                }
+                            }
+                            memberNames.push(userName);
+                        });
+
+                        $('#group-members-list').val(memberNames.join(', '));
+                        $('#group-members-container').removeClass('hidden');
+                    } else {
+                        $('#group-members-list').val('No members found.');
+                        $('#group-members-container').removeClass('hidden');
+                    }
+                } else {
+                    $('#group-members-container').addClass('hidden');
+                }
+            });
+
+            $(document).on('click', '#resent-task-btn', function (e) {
+                e.preventDefault();
+                var resentModal = document.getElementById('resent-task-modal');
+                if (resentModal) {
+                    resentModal.open({
+                        title: 'Resent Tasks',
+                        subtitle: 'Review and forward previously assigned tasks',
+                        buttons: []
+                    });
+                    setTimeout(function () {
+                        renderResentTaskGrid();
+                    }, 100);
+                }
+            });
+
+            var addBtn = document.getElementById('add-task-btn');
+            var modal = document.getElementById('task-modal');
+            if (!modal) return;
+            var body = modal.getBodyElement();
+
+            if (addBtn && modal) {
+                addBtn.addEventListener('click', function () {
+                    modal.open({
+                        mode: 'add',
+                        title: 'Add Task',
+                        subtitle: 'Create and assign a new task',
+                        onSubmit: function () {
+                            var form = document.getElementById('task-form');
+                            if (form && !form.checkValidity()) {
+                                form.reportValidity();
+                                return;
+                            }
+
+                            var assignType = document.querySelector('input[name="assignmentType"]:checked').value;
+                            var selectVal = document.getElementById('task-assignee').value;
+                            var assignLabel = $('#task-assignee option:selected').text() || selectVal;
+
+                            var compVal = document.getElementById('task-company').value;
+                            var compLabel = $('#task-company option:selected').text() || compVal;
+
+                            var freqEl = document.getElementById('task-frequency');
+                            var freqVal = freqEl ? freqEl.value : '';
+                            var freqLabel = freqEl && freqEl.options[freqEl.selectedIndex]
+                                ? freqEl.options[freqEl.selectedIndex].text
+                                : freqVal;
+                            var calculatedStartDate = document.getElementById('task-start-date').value;
+                            var calculatedduedate = document.getElementById('task-due-date').value;
+                            var calculatedDueTime = document.getElementById('task-due-time').value;
+
+                            var taskName = document.getElementById('task-name').value.trim();
+                            var taskDescription = document.getElementById('task-description').value.trim();
+                            var taskPriority = document.getElementById('task-priority').value;
+                            // removed duplicate taskPriority
+                            var nowIso = new Date().toISOString();
+                            // taskDate = Start Date; duedate = Due Date
+                            var taskDateIso = calculatedStartDate || nowIso.split('T')[0];
+                            var duedateIso = calculatedduedate || nowIso.split('T')[0];
+
+                            if (!selectVal) {
+                                Swal.fire({ title: 'Validation', text: 'Please select an employee or group.', icon: 'warning', heightAuto: false });
+                                return;
+                            }
+
+                            // ── Step 1: Save Task Master → /api/Task/api/SaveData ──
+                            var masterPayload = JSON.stringify({
+                                id: 0,
+                                mTransNo: 0,
+                                mCount: 0,
+                                taskName: taskName,
+                                taskDescription: taskDescription,
+                                taskDate: taskDateIso,
+                                taskTime: calculatedDueTime || '',
+                                duedate: duedateIso,
+                                dueTime: calculatedDueTime || '',
+                                taskPriority: taskPriority,
+                                taskAssignType: freqVal,
+                                systemIP: '1',
+                                lockStatus: 'Y',
+                                createdBy: UserNo,
+                                createdOn: nowIso,
+                                subscID: Number(mSubscID) || 0,
+                                status: 'Insert'
+                            });
+
+                            $.ajax({
+                                url: DomainName + '/api/Task/api/SaveData',
+                                type: 'POST',
+                                contentType: 'application/json; charset=UTF-8',
+                                data: masterPayload,
+                                dataType: 'text',
+                                success: function (res, textStatus, jqXHR) {
+                                    if (typeof res === 'string' && res.toLowerCase().indexOf('duplicate') !== -1) {
+                                        Swal.fire({ title: 'Duplicate Detected', text: 'Duplicate record detected.', icon: 'warning', heightAuto: false });
+                                        return;
+                                    }
+                                    if (res && res.message && String(res.message).toLowerCase().indexOf('duplicate') !== -1) {
+                                        Swal.fire({ title: 'Duplicate Detected', text: 'Duplicate record detected.', icon: 'warning', heightAuto: false });
+                                        return;
+                                    }
+
+                                    // Extract the new mTransNo returned by the server
+                                    var taskMTransNo = 0;
+                                    try {
+                                        var ct = (jqXHR.getResponseHeader('Content-Type') || '').toLowerCase();
+                                        if (ct.indexOf('application/json') !== -1) {
+                                            var parsed = JSON.parse(res);
+                                            taskMTransNo = Number(parsed.mTransNo || parsed.id || 0) || 0;
+                                        } else {
+                                            var m = String(res).match(/\^(\d+)/);
+                                            taskMTransNo = m ? Number(m[1]) : 0;
+                                        }
+                                    } catch (e) { }
+
+                                    // ── Step 2: Assign to User → /api/Task/api/SaveDataDtl ──
+                                    // assignto  = numeric user ID
+                                    // assignName = display name of the selected employee/group
+                                    var membersToSave = [];
+                                    if (assignType === 'group') {
+                                        var groupObj = null;
+                                        if (groupCache) {
+                                            groupObj = groupCache.find(function (g) {
+                                                var gId = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                                                return String(gId) === String(selectVal);
+                                            });
+                                        }
+                                        if (groupObj && groupObj.groupTeam) {
+                                            var memberIds = String(groupObj.groupTeam).split(',').map(function (id) { return $.trim(id); }).filter(Boolean);
+                                            $.each(memberIds, function (i, uid) {
+                                                var userName = 'User ' + uid;
+                                                if (employeeCache) {
+                                                    var userOpt = employeeCache.find(function (u) {
+                                                        var uId = u.mTransNo || u.id || u.userNo;
+                                                        return String(uId) === String(uid);
+                                                    });
+                                                    if (userOpt) {
+                                                        userName = userOpt.userName || userOpt.firstName || userOpt.name || userOpt.text || userName;
+                                                    }
+                                                }
+                                                membersToSave.push({ id: Number(uid) || 0, name: userName });
+                                            });
+                                        }
+                                    }
+
+                                    if (membersToSave.length === 0) {
+                                        // Individual assignment or fallback
+                                        membersToSave.push({ id: Number(selectVal) || 0, name: assignLabel });
+                                    }
+
+                                    var saveIndex = 0;
+                                    function saveNextMember() {
+                                        if (saveIndex >= membersToSave.length) {
+                                            modal.close();
+                                            Swal.fire({ title: 'Success!', text: 'Task created successfully.', icon: 'success', heightAuto: false });
+                                            tasksLoaded = false;
+                                            window.loadTasksIntoGrid(true);
+                                            return;
+                                        }
+
+                                        var currentMember = membersToSave[saveIndex];
+                                        var assignPayload = JSON.stringify({
+                                            id: 0,
+                                            mTransNo: taskMTransNo,
+                                            mCount: 0,
+                                            slNo: saveIndex + 1,
+                                            assignto: currentMember.id,
+                                            assignName: currentMember.name,
+                                            Acceptdate: duedateIso,
+                                            assignDate: nowIso,
+                                            assignTime: new Date().toLocaleTimeString('en-US', { hour12: false }),
+                                            systemIP: '1',
+                                            createdBy: UserNo,
+                                            createdOn: nowIso,
+                                            subscID: Number(mSubscID) || 0,
+                                            status: 'Insert'
+                                        });
+
+                                        $.ajax({
+                                            url: DomainName + '/api/Task/api/SaveDataDtl',
+                                            type: 'POST',
+                                            contentType: 'application/json; charset=UTF-8',
+                                            data: assignPayload,
+                                            success: function () {
+                                                saveIndex++;
+                                                saveNextMember();
+                                            },
+                                            error: function (xhr) {
+                                                Swal.fire({ title: 'Error', text: 'Task saved but assignment failed for ' + currentMember.name + '. (' + xhr.status + ')', icon: 'warning', heightAuto: false });
+                                                tasksLoaded = false;
+                                                window.loadTasksIntoGrid(true);
+                                            }
+                                        });
+                                    }
+
+                                    saveNextMember();
+                                },
+                                error: function (xhr) {
+                                    var errText = (xhr.responseText || '').toLowerCase();
+                                    if (errText.indexOf('duplicate') !== -1) {
+                                        Swal.fire({ title: 'Duplicate Detected', text: 'Duplicate record detected.', icon: 'warning', heightAuto: false });
+                                    } else {
+                                        Swal.fire({ title: 'Save Failed', text: 'Could not save task (' + xhr.status + '). Please try again.', icon: 'error', heightAuto: false });
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    var form = document.getElementById('task-form');
+                    if (form) form.reset();
+                    document.getElementById('task-id').value = '0';
+                    document.querySelector('input[name="assignmentType"][value="individual"]').checked = true;
+
+                    refreshAssigneeSelectOptions('individual');
+                    initSelect2Fields();
+                });
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // SECTION 8 — INIT
+        // ─────────────────────────────────────────────────────────────────
+        $(document).ready(function () {
+            renderComponents();
+            initSelect2Fields();
+            bindEvents();
+
+            // Warm employee and group caches at startup
+            var domain = DomainName || '';
+            var subId = typeof mSubscID !== 'undefined' ? mSubscID : 0;
+            if (domain) {
+                $.get(domain + '/api/UserMaster/api/GetData/List?SubscID=' + subId, function (res) {
+                    employeeCache = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                });
+                $.get(domain + '/api/TaskGroup/GetData/' + subId, function (res) {
+                    groupCache = Array.isArray(res) ? res : (res && res.data ? res.data : []);
+                });
+            }
+        });
+    </script>
+
+</body>
+
+</html>

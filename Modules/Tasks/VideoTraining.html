@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="../../Config/assets/images/favicon.ico" type="image/x-icon" sizes="any">
+    <title>Video Training Portal</title>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- DEPENDENCIES -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Tailwind CSS (Using local CDN path as per project standard) -->
+    <script src="../../Config/cdn/tailwindcss_3_4_17.js"></script>
+
+    <!-- Bootstrap Icons (Required by navigation for icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
+        rel="stylesheet">
+
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="../../Config/style/global.css">
+
+    <!-- GSAP for animations (Required by navigation.js) -->
+    <script src="../../Config/cdn/gsap.min.js"></script>
+    <script src="../../UI_Components/widgets/loading-overlay.js"></script>
+
+    <!-- jQuery -->
+    <script src="../../Config/cdn/jquery-3.7.1.min.js"></script>
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- UI COMPONENTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <!-- Navigation Component Script -->
+    <script src="../../UI_Components/layout/navigation.js"></script>
+
+    <!-- UI Button Component -->
+    <script src="../../UI_Components/widgets/ui-button.js"></script>
+</head>
+
+<body class="w-screen app-shell-container overflow-hidden">
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SHELL (Standard layout containers for navigation) -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+
+    <div class="h-full w-full flex relative">
+        <!-- 1. Sidebar Container: Hosts the vertical navigation menu on desktop screens -->
+        <div id="sidebar-container" class="h-full flex-shrink-0"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden pb-14 sm:pb-0">
+            <!-- 2. Top Navigation Container: Hosts the top header bar with user profile, breadcrumbs, etc. -->
+            <div id="top-nav-container"></div>
+
+            <!-- 3. Main Content Canvas: The primary scrollable area for page content -->
+            <main id="main-canvas" onclick="window.appNav?.closeSubNavOnDesktop()"
+                class="relative flex-1 bg-gray-50/40 overflow-y-auto flex flex-col p-4 sm:p-6 lg:p-8">
+
+                <!-- Main Layout Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start lg:items-stretch">
+
+                    <!-- Left: Video Card Container (Takes 2 columns on large screens) -->
+                    <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <!-- Video Screen Container -->
+                        <div class="bg-black relative aspect-video flex items-center justify-center group flex-shrink-0">
+                            <video id="training-video" class="w-full h-full object-cover"
+                                poster="../../Config/assets/images/video_training_poster.png"
+                                src="https://assets.mixkit.co/videos/preview/mixkit-working-at-a-laptop-in-a-modern-office-42674-large.mp4"
+                                controls></video>
+                        </div>
+
+                        <!-- Video Info Bar (Stacked below the video in the same container) -->
+                        <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-gray-100 bg-gray-50/50">
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-lg" id="video-chapter-title">Chapter 1: Accessing & Signing In</h3>
+                                <p class="text-xs text-gray-500 mt-1" id="video-chapter-desc">Learn how to enter credentials and verify with the Show Password option.</p>
+                            </div>
+                            <div class="flex items-center justify-end gap-3 mt-4 sm:mt-0">
+                                <button id="prev-btn"
+                                    class="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                    <i class="bi bi-chevron-left"></i> Prev
+                                </button>
+                                <button id="next-btn"
+                                    class="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Chapter Navigation Playlist -->
+                    <div id="playlist-card" class="bg-white rounded-2xl border border-gray-200 p-4 sm:p-5 shadow-sm flex flex-col lg:h-full">
+                        <h3 class="font-bold text-gray-900 text-base mb-4 flex items-center justify-between flex-shrink-0">
+                            <span>Course Playlist</span>
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium"
+                                id="playlist-duration">3:00 Total</span>
+                        </h3>
+
+                        <!-- Playlist Items List -->
+                        <div class="space-y-2.5 flex-1 lg:overflow-y-auto slim-scrollbar"
+                            id="playlist-chapters-container">
+                            <!-- Chapters injected dynamically by JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- 8. Mobile Bottom Navigation: Replaces sidebar on small mobile screens -->
+    <div id="bottom-nav-container"></div>
+
+
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- PAGE SCRIPTS -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script>
+        if (!localStorage.getItem('LogUser')) { window.location.href = '../../index.html'; }
+
+        // Chapters Data mirroring the VideoScript text segments
+        const chapters = [
+            {
+                id: 0,
+                title: "1. Accessing & Signing In",
+                desc: "Enter credentials and verify with the Show Password option.",
+                start: 0,
+                end: 22,
+                text: "To access the WORKSPACE application, enter your Username and Password on the Login page. If required, use the Show Password icon to verify your password before signing in. Once you've entered your credentials, click the Sign In button. If you're logging in with the default password 123456, you'll be redirected to the Change Password page."
+            },
+            {
+                id: 1,
+                title: "2. Reset Password (First Login)",
+                desc: "Setting up a secure new password on first login.",
+                start: 22,
+                end: 45,
+                text: "If you're logging in for the first time, the Change Password page will open automatically. Enter your current password, create a new password, confirm it, and click Save. Once your password has been updated successfully, you'll be redirected to the Dashboard."
+            },
+            {
+                id: 2,
+                title: "3. My Dashboard Overview",
+                desc: "Reviewing task charts, statistics, and date filters.",
+                start: 45,
+                end: 68,
+                text: "The My Dashboard provides a personalized overview of your assigned tasks. It displays task statistics, recent tasks, and interactive charts that help you manage your daily workload. Use the available date filters to quickly review your assigned tasks."
+            },
+            {
+                id: 3,
+                title: "4. Kanban Task Update Board",
+                desc: "Visual tracking and dragging cards into status columns.",
+                start: 68,
+                end: 92,
+                text: "The Kanban Board allows you to manage your assigned tasks visually. Tasks are organized into To Do, In Progress, and Done columns. Open a task to view its details and update its status as you complete your work. The board helps you easily track your daily progress."
+            },
+            {
+                id: 4,
+                title: "5. Reviewing Task Reports",
+                desc: "Filtering task history by date range and frequency.",
+                start: 92,
+                end: 114,
+                text: "The Task Report page allows you to review the tasks assigned to you. Use the available frequency and date filters to view your task history, monitor completed tasks, and keep track of pending work."
+            },
+            {
+                id: 5,
+                title: "6. Course Wrap-up & Tips",
+                desc: "Final overview on daily tracking benefits.",
+                start: 114,
+                end: 135, // Mixkit video is ~2m 15s (135s) long
+                text: "You have now completed the Employee training for the WORKSPACE application. By regularly checking your dashboard, updating task statuses, and reviewing your task reports, you can effectively manage your daily work within the system."
+            }
+        ];
+
+        var activeChapterId = 0;
+        var videoElement = document.getElementById('training-video');
+
+        // Formats seconds into MM:SS format
+        function formatTime(secs) {
+            var m = Math.floor(secs / 60);
+            var s = Math.floor(secs % 60);
+            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        // Render Playlist Chapters
+        function renderPlaylist() {
+            var container = $('#playlist-chapters-container');
+            container.empty();
+
+            chapters.forEach(function (ch) {
+                var isActive = ch.id === activeChapterId;
+                var activeClass = isActive
+                    ? 'border-primary-500 bg-primary-50/40 text-primary-500'
+                    : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50 text-gray-700';
+
+                var checkIcon = '<i class="bi bi-circle text-gray-400"></i>';
+                if (ch.completed) {
+                    checkIcon = '<i class="bi bi-check-circle-fill text-green-500"></i>';
+                } else if (isActive) {
+                    checkIcon = '<i class="bi bi-play-circle-fill text-primary-500 animate-pulse"></i>';
+                }
+
+                var html = `
+                    <button type="button" data-chapter-id="${ch.id}" 
+                        class="w-full text-left p-3 border rounded-xl flex items-center justify-between gap-3 transition-all duration-200 ${activeClass}">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-sm tracking-tight">${ch.title}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 truncate mt-0.5">${ch.desc}</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span class="text-[10px] font-bold text-gray-400">${formatTime(ch.start)}</span>
+                            ${checkIcon}
+                        </div>
+                    </button>
+                `;
+                container.append(html);
+            });
+        }
+
+
+
+        // Switch to a specific chapter
+        function setChapter(id, seek = false) {
+            if (id < 0 || id >= chapters.length) return;
+            activeChapterId = id;
+            var ch = chapters[id];
+
+            // Update main player title/desc info
+            $('#video-chapter-title').text(ch.title);
+            $('#video-chapter-desc').text(ch.desc);
+
+            // Redraw Playlist highlighting
+            renderPlaylist();
+
+            // Seek if requested
+            if (seek) {
+                videoElement.currentTime = ch.start;
+                videoElement.play();
+            }
+
+            // Sync prev/next button states
+            $('#prev-btn').prop('disabled', id === 0).css('opacity', id === 0 ? '0.5' : '1');
+            $('#next-btn').prop('disabled', id === chapters.length - 1).css('opacity', id === chapters.length - 1 ? '0.5' : '1');
+        }
+
+        // Initialize events
+        function initEvents() {
+            // Handle playlist clicks
+            $('#playlist-chapters-container').on('click', 'button[data-chapter-id]', function () {
+                var id = Number($(this).attr('data-chapter-id'));
+                setChapter(id, true);
+            });
+
+
+
+            // Prev / Next button actions
+            $('#prev-btn').on('click', function () {
+                if (activeChapterId > 0) {
+                    setChapter(activeChapterId - 1, true);
+                }
+            });
+            $('#next-btn').on('click', function () {
+                if (activeChapterId < chapters.length - 1) {
+                    setChapter(activeChapterId + 1, true);
+                }
+            });
+
+
+
+            // Monitor Video Playback Time to update active chapter and check completion
+            videoElement.addEventListener('timeupdate', function () {
+                var cur = videoElement.currentTime;
+
+                // 1. Check if we need to auto-transition active chapter highlighting based on time
+                var currentCh = chapters.find(function (ch) {
+                    return cur >= ch.start && cur < ch.end;
+                });
+                if (currentCh && currentCh.id !== activeChapterId) {
+                    setChapter(currentCh.id, false);
+                }
+
+                // 2. Mark chapters as completed
+                chapters.forEach(function (ch) {
+                    if (cur >= ch.end - 1 && !ch.completed) {
+                        ch.completed = true;
+                        renderPlaylist();
+                    }
+                });
+
+                // 3. Update Progress Bar
+                var dur = videoElement.duration || 135;
+                var progressPercent = Math.min(100, Math.floor((cur / dur) * 100));
+                $('#progress-text').text(progressPercent + '% Completed');
+                $('#progress-bar-fill').css('width', progressPercent + '%');
+            });
+        }
+
+        // Initialize layout and dashboard shell components
+        $(document).ready(function () {
+            // Setup layouts
+            NavigationManager.init(undefined, { useMainNavRail: false });
+
+            // Build elements
+            renderPlaylist();
+            initEvents();
+            setChapter(0, false);
+        });
+    </script>
+</body>
+
+</html>
