@@ -305,54 +305,85 @@
             });
 
             var result = [];
-            var frequencies = ['particular', 'one-time', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+            var frequencies = ['particular', 'one-time', 'onetime', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
 
-            $.each(grouped, function (mNo, arr) {
-                var first = arr[0];
-                
-                // If there are multiple assignments or a group ID exists, it's a group task
-                if (arr.length > 1 || (first.groupMetaId != null && first.groupMetaId !== '')) {
-                    first.assignmentType = 'group';
-                    var gName = 'Group Task';
+            $.each(grouped, function (mNo, rows) {
+                var first = rows[0];
 
-                    if (first.groupMetaId && groupCache) {
-                        var gObj = groupCache.find(function(g) {
-                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
-                            return String(id) === String(first.groupMetaId);
-                        });
-                        if (gObj) {
-                            gName = gObj.groupName || gObj.name || gName;
-                        }
-                    } else if (first.rawTaskAssignType && frequencies.indexOf(String(first.rawTaskAssignType).toLowerCase().trim()) === -1) {
-                        gName = first.rawTaskAssignType;
+                var names = [];
+                $.each(rows, function (j, r) {
+                    var lbl = $.trim(r.assignmentLabel || r.assignName || r.AssignName || '');
+                    if (lbl && names.indexOf(lbl) === -1) {
+                        names.push(lbl);
                     }
+                });
 
-                    // Try to resolve group by matching member IDs against groupCache if still generic
-                    if (gName === 'Group Task' && groupCache) {
-                        var assigneeIds = arr.map(function (r) { return String(r.assigneeId); }).filter(Boolean).sort().join(',');
+                var gId = '';
+                $.each(rows, function (j, r) {
+                    if (r.groupMetaId) {
+                        gId = r.groupMetaId;
+                        return false;
+                    }
+                });
+
+                var isExplicitGroup = false;
+                var gName = '';
+
+                if (gId && groupCache) {
+                    var gObj = groupCache.find(function (g) {
+                        var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                        return String(id) === String(gId);
+                    });
+                    if (gObj) {
+                        gName = gObj.groupName || gObj.name || '';
+                        isExplicitGroup = true;
+                    }
+                }
+
+                if (!isExplicitGroup && (first.assignmentType === 'group' || (rows.some && rows.some(function (r) { return r.assignmentType === 'group'; })))) {
+                    isExplicitGroup = true;
+                }
+
+                if (!gName && first.rawTaskAssignType && frequencies.indexOf(String(first.rawTaskAssignType).toLowerCase().trim()) === -1) {
+                    var candidate = String(first.rawTaskAssignType).trim();
+                    if (groupCache) {
+                        var matchedGroup = groupCache.find(function (g) {
+                            var gN = (g.groupName || g.name || '').toString().toLowerCase().trim();
+                            return gN === candidate.toLowerCase();
+                        });
+                        if (matchedGroup) {
+                            gName = matchedGroup.groupName || matchedGroup.name || candidate;
+                            isExplicitGroup = true;
+                        }
+                    }
+                }
+
+                if (!isExplicitGroup && groupCache) {
+                    var assigneeIds = rows.map(function (r) { return String(r.assigneeId); }).filter(Boolean).sort().join(',');
+                    if (assigneeIds) {
                         var foundGroup = groupCache.find(function (g) {
                             var team = String(g.groupTeam || '').split(',').map(function (s) { return $.trim(s); }).filter(Boolean).sort().join(',');
                             return team && team === assigneeIds;
                         });
                         if (foundGroup) {
-                            gName = foundGroup.groupName || foundGroup.name || gName;
-                        }
-                    }
-
-                    first.assignmentLabel = gName + (arr.length > 1 ? ' (' + arr.length + ' members)' : '');
-                } else {
-                    // Single assignment but might still have groupMetaId
-                    if (first.groupMetaId && groupCache) {
-                        var gObj = groupCache.find(function(g) {
-                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
-                            return String(id) === String(first.groupMetaId);
-                        });
-                        if (gObj) {
-                            first.assignmentLabel = gObj.groupName || gObj.name || first.assignmentLabel;
-                            first.assignmentType = 'group';
+                            gName = foundGroup.groupName || foundGroup.name || '';
+                            isExplicitGroup = true;
                         }
                     }
                 }
+
+                if (isExplicitGroup) {
+                    first.assignmentType = 'group';
+                    first.assignmentLabel = (gName || 'Group Task') + (rows.length > 1 ? ' (' + rows.length + ' members)' : '');
+                } else {
+                    first.assignmentType = 'individual';
+                    if (names.length > 0) {
+                        first.assignmentLabel = names.join(', ');
+                    } else if (!first.assignmentLabel) {
+                        first.assignmentLabel = 'Self';
+                    }
+                }
+
                 result.push(first);
             });
             return result;
@@ -456,7 +487,10 @@
         }
 
         function tasksToRecentGridRows(tasks) {
-            var sorted = tasks.slice();
+            var activeTasks = $.grep(tasks, function (t) {
+                return !isTaskCompletedDash(t);
+            });
+            var sorted = activeTasks.slice();
             sorted.sort(function (a, b) {
                 return String(b.taskDate || '').localeCompare(String(a.taskDate || ''));
             });

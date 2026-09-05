@@ -110,9 +110,9 @@
                     </div>
 
                     <premium-grid id="task-grid" class="flex-1 w-full min-h-0 mb-4 sm:mb-0" data-show-sino="true"
-                        data-show-actions="false" data-pagination="true"
-                        data-pagination-page-size="15" data-pagination-page-size-selector="[5, 10, 15, 20, 50]"
-                        data-floating-filter="false" data-row-height="40" data-auto-fill-height="true" data-min-height="200"
+                        data-show-actions="false" data-pagination="true" data-pagination-page-size="15"
+                        data-pagination-page-size-selector="[5, 10, 15, 20, 50]" data-floating-filter="false"
+                        data-row-height="40" data-auto-fill-height="true" data-min-height="200"
                         data-suppress-size-to-fit="false">
                         <div slot="actions" class="flex items-center gap-3">
                             <premium-button id="add-task-btn" icon="bi-funnel" label="View List" variant="outline"
@@ -202,20 +202,32 @@
             var assignTypeStr = (row.taskAssignType || row.TaskAssignType || row.frequency || row.Frequency || 'particular').toString().toLowerCase();
             var displayAssignType = assignTypeStr === 'particular' ? 'One-time' : (assignTypeStr.charAt(0).toUpperCase() + assignTypeStr.slice(1));
 
+            var rawTaskDate = row.taskDate || row.TaskDate || row.startDate || row.StartDate || row.taskdate || row.Taskdate || row.createdOn || row.createddate || row.entrydate || row.EntryDate || '';
+            var rawDueDate = row.dueDate || row.DueDate || row.duedate || row.Duedate || row.due_date || row.Due_Date || row.targetDate || row.targetdate || row.TargetDate || row.taskDueDate || row.TaskDueDate || row.acceptdate || row.Acceptdate || '';
+            var compDate = row.taskEndDate || row.CompletedDate || row.completedOn || row.CompletedOn || row.closedDate || row.ClosedDate || row.completeDate || row.CompleteDate || '';
+
+            var cleanTaskDate = rawTaskDate ? String(rawTaskDate).split('T')[0].split(' ')[0] : '';
+            var cleanDueDate = rawDueDate ? String(rawDueDate).split('T')[0].split(' ')[0] : '';
+            var cleanCompDate = compDate ? String(compDate).split('T')[0].split(' ')[0] : '';
+
+            if (!cleanDueDate) cleanDueDate = cleanTaskDate;
+            if (!cleanTaskDate) cleanTaskDate = cleanDueDate;
+
             return {
                 id: id,
                 taskName: row.taskName || row.TaskName || '',
                 description: row.taskDescription || row.TaskDescription || row.description || '',
-                taskDate: row.taskDate || row.TaskDate || '',
-                taskTime: row.taskTime || row.TaskTime || '',
-                dueDate: row.dueDate || row.DueDate || '',
-                dueTime: row.dueTime || row.DueTime || '',
+                taskDate: cleanTaskDate,
+                taskTime: row.taskTime || row.TaskTime || row.tasktime || row.Tasktime || '',
+                dueDate: cleanDueDate,
+                dueTime: row.dueTime || row.DueTime || row.duetime || row.Duetime || '',
                 priority: row.taskPriority || row.TaskPriority || row.priority || '',
                 assignmentLabel: row.assignName || row.AssignName || '',
                 status: row.taskStatus || row.TaskStatus || row.status || '',
                 assignmentType: row.assignmentType || 'individual',
                 frequency: assignTypeStr,
-                taskAssignType: displayAssignType
+                taskAssignType: displayAssignType,
+                completedDate: cleanCompDate
             };
         }
 
@@ -229,6 +241,7 @@
             if (p.length !== 3) return s;
             return p[2] + '-' + p[1] + '-' + p[0];
         }
+
         function refreshGridData() {
             var pageGrid = document.getElementById('task-grid');
             if (pageGrid && typeof pageGrid.setRowData === 'function') {
@@ -240,11 +253,11 @@
                         var dStr = $.trim(t.taskDate || t.dueDate || '');
                         if (dStr.indexOf('T') > 0) dStr = dStr.split('T')[0];
                         if (dStr.indexOf(' ') > 0) dStr = dStr.split(' ')[0];
-                        if (!dStr) return true; // Keep tasks without date? We'll keep them for safety.
+                        if (!dStr) return true;
 
                         var p = dStr.split(/[-\/]/);
                         if (p.length === 3 && p[0].length === 2 && p[2].length === 4) {
-                            dStr = p[2] + '-' + p[1] + '-' + p[0]; // Convert DD-MM-YYYY to YYYY-MM-DD
+                            dStr = p[2] + '-' + p[1] + '-' + p[0];
                         }
 
                         return dStr >= lastReportQuery.from && dStr <= lastReportQuery.to;
@@ -256,7 +269,6 @@
                         return (t.frequency || 'particular') === selectedFreqTab;
                     });
                 }
-
 
                 pageGrid.setRowData(filtered);
             }
@@ -280,8 +292,6 @@
                     .toggleClass('text-gray-500 hover:bg-gray-50', !active);
             });
         }
-
-
 
         // ─────────────────────────────────────────────────────────────────
         // SECTION 5 — FEATURE LOGIC
@@ -353,16 +363,12 @@
             });
         }
 
-
-
         // ─────────────────────────────────────────────────────────────────
         // SECTION 6 — COMPONENTS
         // ─────────────────────────────────────────────────────────────────
 
         function renderComponents() {
             NavigationManager.init(undefined, { useMainNavRail: false });
-
-
 
             var taskGrid = document.getElementById('task-grid');
             if (taskGrid) {
@@ -374,6 +380,7 @@
                         { field: 'taskTime', headerName: 'Task Time', minWidth: 120, filter: true },
                         { field: 'dueDate', headerName: 'Due Date', minWidth: 130, filter: true, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
                         { field: 'dueTime', headerName: 'Due Time', minWidth: 120, filter: true },
+                        { field: 'completedDate', headerName: 'Completed Date', minWidth: 140, filter: true, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
                         { field: 'priority', headerName: 'Priority', minWidth: 120, filter: true },
                         { field: 'assignmentLabel', headerName: 'Assigned To', minWidth: 170, filter: true },
                         { field: 'taskAssignType', headerName: 'Assign Type', minWidth: 130, filter: true },
@@ -422,8 +429,6 @@
         }
 
         function bindEvents() {
-
-
             // Handle frequency filter tabs click
             $(document).on('click', '[data-freq-tab]', function () {
                 var tab = $(this).attr('data-freq-tab');
@@ -437,8 +442,6 @@
 
                 refreshGridData();
             });
-
-
 
             var viewListModal = document.getElementById('view-list-modal');
 
@@ -522,8 +525,6 @@
                 }
                 $from.trigger('focus');
             });
-
-
         }
 
         // ─────────────────────────────────────────────────────────────────

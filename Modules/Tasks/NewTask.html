@@ -621,58 +621,91 @@
             });
 
             var result = [];
-            var frequencies = ['particular', 'one-time', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
+            var frequencies = ['particular', 'one-time', 'onetime', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
 
             $.each(grouped, function (mNo, rows) {
                 var first = rows[0];
-                if (rows.length > 1) {
-                    var gName = 'Group Task';
-                    var gId = '';
-                    $.each(rows, function (j, r) {
-                        if (r.groupMetaId) {
-                            gId = r.groupMetaId;
-                            return false;
-                        }
-                    });
 
-                    if (gId && groupCache) {
-                        var gObj = groupCache.find(function (g) {
-                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
-                            return String(id) === String(gId);
-                        });
-                        if (gObj) {
-                            gName = gObj.groupName || gObj.name || gName;
-                        }
-                    } else if (first.rawTaskAssignType && frequencies.indexOf(first.rawTaskAssignType.toLowerCase()) === -1) {
-                        gName = first.rawTaskAssignType;
+                // Gather all individual assignee names across rows
+                var names = [];
+                $.each(rows, function (j, r) {
+                    var lbl = $.trim(r.assignmentLabel || r.assignName || r.AssignName || '');
+                    if (lbl && names.indexOf(lbl) === -1) {
+                        names.push(lbl);
                     }
+                });
 
-                    // Try to resolve group by matching member IDs against groupCache
-                    if (gName === 'Group Task' && groupCache) {
-                        var assigneeIds = rows.map(function (r) { return String(r.assigneeId); }).filter(Boolean).sort().join(',');
+                // Find explicit group meta ID if any row has it
+                var gId = '';
+                $.each(rows, function (j, r) {
+                    if (r.groupMetaId) {
+                        gId = r.groupMetaId;
+                        return false;
+                    }
+                });
+
+                var isExplicitGroup = false;
+                var gName = '';
+
+                // 1. Check by groupMetaId in groupCache
+                if (gId && groupCache) {
+                    var gObj = groupCache.find(function (g) {
+                        var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
+                        return String(id) === String(gId);
+                    });
+                    if (gObj) {
+                        gName = gObj.groupName || gObj.name || '';
+                        isExplicitGroup = true;
+                    }
+                }
+
+                // 2. Check if assignmentType is explicitly 'group'
+                if (!isExplicitGroup && (first.assignmentType === 'group' || (rows.some && rows.some(function (r) { return r.assignmentType === 'group'; })))) {
+                    isExplicitGroup = true;
+                }
+
+                // 3. Check by rawTaskAssignType if it's a non-frequency string matching a group
+                if (!gName && first.rawTaskAssignType && frequencies.indexOf(String(first.rawTaskAssignType).toLowerCase().trim()) === -1) {
+                    var candidate = String(first.rawTaskAssignType).trim();
+                    if (groupCache) {
+                        var matchedGroup = groupCache.find(function (g) {
+                            var gN = (g.groupName || g.name || '').toString().toLowerCase().trim();
+                            return gN === candidate.toLowerCase();
+                        });
+                        if (matchedGroup) {
+                            gName = matchedGroup.groupName || matchedGroup.name || candidate;
+                            isExplicitGroup = true;
+                        }
+                    }
+                }
+
+                // 4. Check if member IDs match a group team in groupCache
+                if (!isExplicitGroup && groupCache) {
+                    var assigneeIds = rows.map(function (r) { return String(r.assigneeId); }).filter(Boolean).sort().join(',');
+                    if (assigneeIds) {
                         var foundGroup = groupCache.find(function (g) {
                             var team = String(g.groupTeam || '').split(',').map(function (s) { return $.trim(s); }).filter(Boolean).sort().join(',');
                             return team && team === assigneeIds;
                         });
                         if (foundGroup) {
-                            gName = foundGroup.groupName || foundGroup.name || gName;
-                        }
-                    }
-
-                    first.assignmentLabel = gName;
-                    first.assignmentType = 'group';
-                } else {
-                    if (first.groupMetaId && groupCache) {
-                        var gObj = groupCache.find(function (g) {
-                            var id = g.mTransNo || g.MTransNo || g.id || g.Id || g.groupId;
-                            return String(id) === String(first.groupMetaId);
-                        });
-                        if (gObj) {
-                            first.assignmentLabel = gObj.groupName || gObj.name || first.assignmentLabel;
-                            first.assignmentType = 'group';
+                            gName = foundGroup.groupName || foundGroup.name || '';
+                            isExplicitGroup = true;
                         }
                     }
                 }
+
+                if (isExplicitGroup) {
+                    first.assignmentType = 'group';
+                    first.assignmentLabel = gName || 'Group Task';
+                } else {
+                    first.assignmentType = 'individual';
+                    if (names.length > 0) {
+                        first.assignmentLabel = names.join(', ');
+                    } else if (!first.assignmentLabel) {
+                        first.assignmentLabel = 'Self';
+                    }
+                }
+
                 result.push(first);
             });
             return result;
@@ -688,9 +721,16 @@
                     filteredData = mockTaskList.filter(t => (t.frequency || 'particular') === selectedFreqTab);
                 }
 
-                // Sort by mTransNo descending to show latest tasks first
+                // Sort by mTransNo / id descending to show newest tasks first (stack order)
                 filteredData.sort(function (a, b) {
-                    return (b.mTransNo || 0) - (a.mTransNo || 0);
+                    var numA = Number(a.mTransNo || a.id || 0);
+                    var numB = Number(b.mTransNo || b.id || 0);
+                    if (numA !== numB) {
+                        return numB - numA;
+                    }
+                    var dateA = String(a.taskDate || a.duedate || '');
+                    var dateB = String(b.taskDate || b.duedate || '');
+                    return dateB.localeCompare(dateA);
                 });
 
                 grid.setRowData(filteredData);
@@ -915,6 +955,7 @@
             if (grid) {
                 grid.setOptions({
                     columns: [
+                        { field: 'mTransNo', headerName: 'TaskID', width: 100, minWidth: 80, sort: 'desc' },
                         { field: 'taskName', headerName: 'Task Name', flex: 2, minWidth: 220 },
                         { field: 'assignmentLabel', headerName: 'Assignee / Group', flex: 1.5, minWidth: 180 },
                         { field: 'taskAssignType', headerName: 'Assign Type', flex: 1.2, minWidth: 130 },

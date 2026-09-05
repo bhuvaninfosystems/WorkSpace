@@ -456,6 +456,7 @@
                             taskName: row.taskName || row.TaskName || '',
                             assignee: row.assignName || row.AssignName || 'Self',
                             priority: row.taskPriority || row.TaskPriority || row.priority || 'Medium',
+                            startDate: row.taskDate ? row.taskDate.split('T')[0] : (row.TaskDate ? row.TaskDate.split('T')[0] : (row.startDate ? row.startDate.split('T')[0] : (row.createdOn ? row.createdOn.split('T')[0] : ''))),
                             frequency: (row.taskAssignType || row.frequency || 'particular').toString().toLowerCase().trim(),
                             status: normStatus,
                             duedate: row.duedate ? row.duedate.split('T')[0] : '',
@@ -500,7 +501,12 @@
                 return true;
             });
             filtered.sort(function (a, b) {
-                return (Number(b.mTransNo) || 0) - (Number(a.mTransNo) || 0);
+                var da = a.duedate || '9999-99-99';
+                var db = b.duedate || '9999-99-99';
+                if (da !== db) {
+                    return da.localeCompare(db);
+                }
+                return (Number(a.mTransNo) || 0) - (Number(b.mTransNo) || 0);
             });
             return filtered;
         }
@@ -527,6 +533,11 @@
             var grid = document.getElementById('task-grid');
             if (grid) {
                 var data = getFilteredTasks();
+                if (selectedDateTab !== 'completed') {
+                    data = data.filter(function (t) {
+                        return t.status !== 'Complete';
+                    });
+                }
                 if (typeof grid.setOptions === 'function') {
                     grid.setOptions({ rowData: data });
                 }
@@ -717,8 +728,8 @@
                         { field: 'mTransNo', headerName: 'TaskID', width: 100, minWidth: 80 },
                         { field: 'taskName', headerName: 'Task', flex: 2, minWidth: 200 },
                         { field: 'assignee', headerName: 'Assignee', flex: 1, minWidth: 120 },
-                        { field: 'priority', headerName: 'Priority', flex: 1, minWidth: 100 },
-                        { field: 'duedate', headerName: 'Due Date', flex: 1, minWidth: 120, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
+                        { field: 'startDate', headerName: 'Start Date', flex: 1, minWidth: 120, valueFormatter: function (params) { return formatDateDisplay(params.value); } },
+                        { field: 'duedate', headerName: 'Due Date', flex: 1, minWidth: 120, sort: 'asc', valueFormatter: function (params) { return formatDateDisplay(params.value); } },
                         { field: 'dueTime', headerName: 'Due Time', flex: 1, minWidth: 100 },
                         { 
                             field: 'status', headerName: 'Status', flex: 1, minWidth: 140,
@@ -745,8 +756,18 @@
                                 window.viewRecord(params.data.transSlNo, params.data);
                             }
                         },
-                        getRowStyle: function () {
-                            return { cursor: 'pointer' };
+                        getRowStyle: function (params) {
+                            var style = { cursor: 'pointer' };
+                            if (!params || !params.data) return style;
+                            var prio = String(params.data.priority || '').toLowerCase();
+                            if (prio === 'high') {
+                                style.backgroundColor = '#fff1f2'; // Soft reddish background for High priority
+                            } else if (prio === 'medium') {
+                                style.backgroundColor = '#eff6ff'; // Soft bluish background for Medium priority
+                            } else if (prio === 'low') {
+                                style.backgroundColor = '#f8fafc'; // Soft gray background for Low priority
+                            }
+                            return style;
                         }
                     },
                     rowData: []
