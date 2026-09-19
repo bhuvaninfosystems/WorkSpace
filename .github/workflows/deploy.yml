@@ -5,14 +5,28 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
-    runs-on: self-hosted
+  deploy-test:
+    runs-on: [self-hosted, test]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy to IIS site folder
+      - name: Copy to test server
         shell: cmd
         run: |
-          robocopy "%GITHUB_WORKSPACE%" "C:\Software\Task Server\HTML" /MIR /XD .git .github .vscode /XF PROJECT_ARCHITECTURE.md
+          robocopy "%GITHUB_WORKSPACE%" "C:\Software\Task Server\HTML" /MIR /XD .git .github .vscode
+          if %ERRORLEVEL% GEQ 8 (exit /b 1) else (exit /b 0)
+
+  deploy-production:
+    needs: deploy-test
+    runs-on: [self-hosted, production]
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy to production server
+        shell: cmd
+        run: |
+          robocopy "%GITHUB_WORKSPACE%" "C:\TestingCICD" /MIR /XD .git .github .vscode
           if %ERRORLEVEL% GEQ 8 (exit /b 1) else (exit /b 0)
